@@ -1,3 +1,7 @@
+#ifndef MEMORY_H
+#define MEMORY_H
+
+
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -38,7 +42,7 @@ int string_to_int(char* str);
 
 // Initializes the main_memory array in the core structure from the file "memin.txt".
 // If the file has fewer lines than MAIN_MEMORY_SIZE, the remaining values are set to 0.
-void main_memory_initialization(main_memory* mem);
+main_memory* main_memory_initialization();
 
 /*
 Returns a copy of the block from the memory array.
@@ -50,6 +54,8 @@ memory_block get_block(main_memory* mem, int tag);
 // Writes a word (int) to a specific address in memory (at the appropriate location in the block)
 void write_word_to_block(main_memory* mem, uint32_t address, int word);
 
+
+void free_main_memory(main_memory* memory);
 
 
 /*******************************************************/
@@ -64,3 +70,5 @@ void print_all_memory(main_memory* mem);
 
 
 
+
+#endif // MEMORY_H

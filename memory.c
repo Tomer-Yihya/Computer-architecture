@@ -18,8 +18,18 @@ int string_to_int(char* str) {
 
 // Initializes the main_memory array in the core structure from the file "memin.txt".
 // If the file has fewer lines than MAIN_MEMORY_SIZE, the remaining values are set to 0.
-void main_memory_initialization(main_memory* mem) {
+main_memory* main_memory_initialization() {
+    
     // Initialize all blocks and their data to 0
+    main_memory* mem = malloc(sizeof(main_memory));
+    if (!mem) {
+        perror("Failed to allocate memory for main memory");
+        exit(EXIT_FAILURE);
+    }
+    if (!mem) {
+        printf("Error: Memory pointer is NULL in main_memory_initialization.\n");
+        return NULL;
+    }
     for (int i = 0; i < NUM_OF_BLOCKS; i++) {
         mem->blocks[i].tag = i; // Set the tag for each block based on its index
         for (int j = 0; j < BLOCK_SIZE; j++) {
@@ -29,7 +39,7 @@ void main_memory_initialization(main_memory* mem) {
     FILE* file = fopen("memin.txt", "r");
     if (file == NULL) {
         perror("Error opening file");
-        return;
+        return NULL;
     }
     char line[20];
     int line_number = 0;
@@ -57,8 +67,8 @@ void main_memory_initialization(main_memory* mem) {
             break;
         }
     }
-
     fclose(file);
+    return mem;
 }
 
 /*
@@ -72,11 +82,12 @@ memory_block get_block(main_memory* mem, int tag) {
         memory_block empty_block = {0}; // Return an empty block in case of error
         return empty_block;
     }
-    // Adjust tag using modulo to ensure it is within bounds
-    int adjusted_index = tag % NUM_OF_BLOCKS;
-    if (adjusted_index < 0) {
-        adjusted_index += NUM_OF_BLOCKS; // Handle negative indices
+    if (tag < 0) {
+        printf("Error: Invalid tag value in get_block.\n");
+        memory_block empty_block = {0}; // Return an empty block in case of error
+        return empty_block;
     }
+    int adjusted_index = tag % NUM_OF_BLOCKS;
     // Return a copy of the appropriate block
     return mem->blocks[adjusted_index];
 }
@@ -84,16 +95,31 @@ memory_block get_block(main_memory* mem, int tag) {
 // Writes a word (int) to a specific address in memory (at the appropriate location in the block)
 void write_word_to_block(main_memory* mem, uint32_t address, int word) {
     if (!mem) {
-        printf("Error: Memory is not initialized.\n");
+        printf("Error: Memory pointer is NULL in write_word_to_block.\n");
         return;
     }
     // Extract offset, index, and tag from the address
-    uint32_t offset = address % BLOCK_SIZE;                      // Offset within the block
-    uint32_t index = (address / BLOCK_SIZE) % NUM_OF_BLOCKS;     // Index of the block
-    uint32_t tag = address / (BLOCK_SIZE * NUM_OF_BLOCKS);       // Tag of the block
+    if (address >= MAIN_MEMORY_SIZE * BLOCK_SIZE) {
+        printf("Error: Address out of bounds in write_word_to_block.\n");
+        return;
+    }
+    uint32_t offset = address % BLOCK_SIZE;                  // Offset within the block
+    uint32_t index = (address / BLOCK_SIZE) % NUM_OF_BLOCKS; // Index of the block
+    uint32_t tag = address / (BLOCK_SIZE * NUM_OF_BLOCKS);   // Tag of the block
     // Update the block in memory
     mem->blocks[index].data[offset] = word; // Write the word at the correct offset
     mem->blocks[index].tag = tag;           // Update the tag for the block
+}
+
+
+void free_main_memory(main_memory* memory) {
+    if (!memory) {
+        printf("Error: Null pointer passed to free_main_memory.\n");
+        return;
+    }
+
+    // Free the main memory itself
+    //free(memory);
 }
 
 
@@ -103,6 +129,10 @@ void write_word_to_block(main_memory* mem, uint32_t address, int word) {
 
 // Prints only the non-zero entries in the main_memory array in the core structure.
 void print_memory(main_memory* mem) {
+    if (!mem) {
+        printf("Error: Memory pointer is NULL in print_memory.\n");
+        return;
+    }
     printf("Main Memory (Non-Zero Entries):\n");
     int count = 0;
     for (int i = 0; i < NUM_OF_BLOCKS; i++) {
@@ -134,8 +164,11 @@ void print_memory(main_memory* mem) {
 
 // Prints the entire main_memory array in the core structure.
 void print_all_memory(main_memory* mem) {
+    if (!mem) {
+        printf("Error: Memory pointer is NULL in print_all_memory.\n");
+        return;
+    }
     printf("Main Memory (All Entries):\n");
-
     for (int i = 0; i < NUM_OF_BLOCKS; i++) {
         printf("Block[%d]: { ", i);
         for (int j = 0; j < BLOCK_SIZE; j++) {
@@ -149,7 +182,6 @@ void print_all_memory(main_memory* mem) {
 
     printf("End of Main Memory.\n");
 }
-
 
 
 

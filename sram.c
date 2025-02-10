@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include "sram.h"
+
 
 
 /*******************************************************/
@@ -8,10 +10,10 @@
 /*******************************************************/
 
 /* 
-The function initializes the cache with:
-each tag iniital as 0
-each state iniital as "invalid"
-each data iniital as 0 
+* The function initializes the cache with:
+* each tag iniital as 0
+* each state iniital as "invalid"
+* each data iniital as 0 
 */
 void cache_initialization(Cache *cache) 
 {
@@ -26,45 +28,44 @@ void cache_initialization(Cache *cache)
 
 
 /*
-The function searches for the block in the cache
-if found data will be assigned to it and if not data = 0.
-returns 1 on success or -1 on failure
+* The function looks for the block in the cache, if it is found it returns true and otherwise it returns false.
+* In addition, the function returns a copy of the block via the pointer it received as an argument
 */
-int find_word(Cache *cache, uint32_t address, uint32_t *data) {
+bool search_block(Cache *cache, uint32_t address, cache_block* block) {
     uint32_t index = (address / CACHE_BLOCK_SIZE) % NUM_BLOCKS; // extracting the index
     uint32_t tag = address / (CACHE_BLOCK_SIZE * NUM_BLOCKS);   // extracting the tag
-    uint32_t offset = address % CACHE_BLOCK_SIZE;               // extracting the offset
+    // uint32_t offset = address % CACHE_BLOCK_SIZE;               // extracting the offset
+    
     // get the block from the cache
-    Cache_block *block = &cache->blocks[index]; 
+    cache_block *cache_block_ptr = &cache->blocks[index];
     // hit
-    if (block->state != INVALID && block->tag == tag) {
-        *data = block->data[offset];
-        return 1;
+    if (cache_block_ptr->state != INVALID && cache_block_ptr->tag == tag) {
+        *block = *cache_block_ptr; // Copy the block to the provided pointer
+        return true;
     }
     // miss
-    *data = 0;
-    return -1;
+    return false;
 }
 
 
 /*
  * The function inserts a block into the cache.
  * If a block exists at the target index, it will be overwritten.
- * Returns 1 on success, -1 on failure.
+ * Returns true on success and false in case of a failure.
  */
-int insert_block(Cache *cache, uint32_t address, Cache_block *new_block) {
+bool insert_block(Cache *cache, uint32_t address, cache_block *new_block) {
     uint32_t index = (address / CACHE_BLOCK_SIZE) % NUM_BLOCKS; // extracting the index
     uint32_t tag = address / (CACHE_BLOCK_SIZE * NUM_BLOCKS);   // extracting the index
 
     // Check if the index is within bounds
     if (index >= NUM_BLOCKS) {
-        return -1; // Failure: index out of bounds
+        return false;; // Failure: index out of bounds
     }
 
     new_block->tag = tag; // Update the block's tag
     cache->blocks[index] = *new_block;
 
-    return 1; // Success
+    return true;; // Success
 }
 
 
@@ -81,22 +82,21 @@ void copy_cache(Cache *source, Cache *destination) {
 
 /*
  * The function updates the MESI state of a block in the cache if it exists.
- * If the block is found, updates its state and returns 1.
- * If the block is not found, returns -1.
+ * If the block is found, updates its state and true, if not found, returns false.
  */
-int update_state(Cache *cache, uint32_t address, MESI_state new_state) {
+bool update_state(Cache *cache, uint32_t address, MESI_state new_state) {
     
     uint32_t index = (address / CACHE_BLOCK_SIZE) % NUM_BLOCKS; // Extract the index
     uint32_t tag = address / (CACHE_BLOCK_SIZE * NUM_BLOCKS);   // Extract the tag
 
-    Cache_block *block = &cache->blocks[index];
+    cache_block *block = &cache->blocks[index];
 
     // Check if the block is valid and the tag matches
     if (block->state != INVALID && block->tag == tag) {
         block->state = new_state; // Update the state
-        return 1; // Success
+        return true; // Success
     }
-    return -1; // Block not found
+    return false; // Block not found
 }
 
 
@@ -113,7 +113,7 @@ int update_state(Cache *cache, uint32_t address, MESI_state new_state) {
  */
 void print_all_cache(Cache *cache) {
     for (int i = 0; i < NUM_BLOCKS; i++) {
-        Cache_block *block = &cache->blocks[i];
+        cache_block *block = &cache->blocks[i];
         printf("block(%d): tag = %u, data = {", i, block->tag);
         for (int j = 0; j < CACHE_BLOCK_SIZE; j++) {
             printf("%u", block->data[j]);
@@ -145,7 +145,7 @@ void print_all_cache(Cache *cache) {
  */
 void print_cache(Cache *cache) {
     for (int i = 0; i < NUM_BLOCKS; i++) {
-        Cache_block *block = &cache->blocks[i];
+        cache_block *block = &cache->blocks[i];
         if (block->state != INVALID) {
             printf("block(%d): tag = %u, data = {", i, block->tag);
             for (int j = 0; j < CACHE_BLOCK_SIZE; j++) {

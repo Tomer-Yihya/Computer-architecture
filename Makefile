@@ -1,25 +1,12 @@
-# Compiler and flags
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c99
+CFLAGS = -g -Wall
+EXEC = sim.exe
+SRCS = sim.c core.c memory.c sram.c
+TRACE_FILES = core0trace.txt core1trace.txt core2trace.txt core3trace.txt
+REGOUT_FILES = regout0.txt regout1.txt regout2.txt regout3.txt
 
-# Target executable
-TARGET = sim.exe
+all: clean  # Ensure old trace files are deleted before recompiling
+	$(CC) $(CFLAGS) -o $(EXEC) $(SRCS)
 
-# Source files
-SRC = sim.c core.c sram.c memory.c
-
-# Header files
-HEADERS = core.h sram.h memory.h
-
-# Default target: build the executable
-all: $(TARGET)
-
-# Rule to build the executable
-$(TARGET): $(SRC)
-	@$(CC) $(CFLAGS) -o $@ $(SRC)
-
-# Clean target to remove build artifacts
 clean:
-	@cmd /c del $(TARGET) >nul 2>&1
-
-
+	rm -f $(EXEC) $(TRACE_FILES) $(REGOUT_FILES)

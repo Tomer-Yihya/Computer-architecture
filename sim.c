@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
 #include "sram.h"
 #include "core.h"
 #include "memory.h"
+
 
 
 /*
@@ -95,7 +98,7 @@ int main() {
 }
 */
 
-
+/*
 // check main_memory_initialization
 int main() {
     
@@ -118,6 +121,47 @@ int main() {
 
     return 0;
 }
+*/
+
+
+
+// check the core functions
+int main() {
+    
+    // Step 1: Initialize the core from the file "imem0.txt"
+    core* cpu0 = core_initialization(0,"imem0.txt");
+    core* cpu1 = core_initialization(1,"imem1.txt");
+    if (!cpu0 || !cpu1) {
+        perror("Failed to allocate memory for core");
+        exit(EXIT_FAILURE);
+    }
+
+    // Step 2: Initialize the main memory from the file "memin.txt"
+    main_memory* memory = main_memory_initialization();
+    if (!memory) {
+        perror("Failed to allocate memory for core");
+        exit(EXIT_FAILURE);
+    }
+
+    // Step 3: Initialize and print core status
+    //printf("Core status after initialization:\n");
+    //print_core_status(cpu);
+
+    // Step 4: Run the core
+    run_core(cpu0, memory, "imem0.txt");
+    run_core(cpu1, memory, "imem1.txt");
+    //run_core(cpu, memory, "imem2.txt");
+    //run_core(cpu, memory, "imem3.txt");
+
+    // Step 5: Print the core status after running
+    //printf("\nCore status after running:\n");
+    //print_core_status(cpu);
+
+    free_main_memory(memory);
+
+    return 0;
+}
+
 
 
 
