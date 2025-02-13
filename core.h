@@ -24,6 +24,7 @@
 #define BUS_DELAY 16  // Delay until the first word is retrieved from memory
 #define BLOCK_DELAY 4 // Delay until the entire block is received
 
+
 /*******************************************************/
 /*********************  Structs ************************/
 /*******************************************************/

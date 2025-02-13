@@ -14,11 +14,10 @@ int main() {
 
     // Step 1: Initialize the cores from the files "imem0.txt", "imem1.txt", "imem2.txt", "imem3.txt"
     core* cpu0 = core_initialization(0,"imem0.txt");
-    //core* cpu1 = core_initialization(1,"imem1.txt");
+    core* cpu1 = core_initialization(1,"imem1.txt");
     core* cpu2 = core_initialization(2,"imem2.txt");
     core* cpu3 = core_initialization(3,"imem3.txt");
-    if (!cpu0 || !cpu2 || !cpu3) {
-    //if (!cpu0 || !cpu1 || !cpu2 || !cpu3) {
+    if (!cpu0 || !cpu1 || !cpu2 || !cpu3) {
         perror("Failed to allocate memory for core");
         exit(EXIT_FAILURE);
     }
@@ -32,16 +31,12 @@ int main() {
 
     // Step 3: Run the core
     run_core(cpu0, memory);
-    //run_core(cpu1, memory);
-    run_core(cpu2, memory);
-    run_core(cpu3, memory);
+    run_core(cpu1, memory);
+    //run_core(cpu2, memory);
+    //run_core(cpu3, memory);
 
     // Step 4: free memory
-    free_core(cpu0);
-    //free_core(cpu1);
-    free_core(cpu2);
-    free_core(cpu3);
-    free_main_memory(memory);
+    //free_main_memory(memory);
 
     return 0;
 }

@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <stdbool.h>
 
 /*******************************************************/
@@ -79,6 +80,8 @@ void copy_cache(Cache *source, Cache *destination);
  */
 bool update_state(Cache *cache, uint32_t address, MESI_state new_state);
 
+
+void free_cache(Cache* cache);
 
 
 /*******************************************************/

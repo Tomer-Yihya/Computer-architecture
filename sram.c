@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include "sram.h"
 
 
@@ -102,7 +103,10 @@ bool update_state(Cache *cache, uint32_t address, MESI_state new_state) {
 
 
 
-
+void free_cache(Cache* cache) {
+    if (!cache) return;
+    free(cache);
+}
 
 
 /*******************************************************/
