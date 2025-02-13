@@ -33,13 +33,14 @@ void cache_initialization(Cache *cache)
 */
 bool search_block(Cache *cache, uint32_t address, cache_block* block) {
     uint32_t index = (address / CACHE_BLOCK_SIZE) % NUM_BLOCKS; // extracting the index
-    uint32_t tag = address / (CACHE_BLOCK_SIZE * NUM_BLOCKS);   // extracting the tag
+    //uint32_t tag = address / (CACHE_BLOCK_SIZE * NUM_BLOCKS);   // extracting the tag
     // uint32_t offset = address % CACHE_BLOCK_SIZE;               // extracting the offset
     
     // get the block from the cache
     cache_block *cache_block_ptr = &cache->blocks[index];
     // hit
-    if (cache_block_ptr->state != INVALID && cache_block_ptr->tag == tag) {
+    //if (cache_block_ptr->state != INVALID && cache_block_ptr->tag == tag) {
+    if (cache_block_ptr->state != INVALID) {
         *block = *cache_block_ptr; // Copy the block to the provided pointer
         return true;
     }

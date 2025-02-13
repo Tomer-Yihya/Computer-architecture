@@ -18,7 +18,7 @@ int string_to_int(char* str) {
 
 // Initializes the main_memory array in the core structure from the file "memin.txt".
 // If the file has fewer lines than MAIN_MEMORY_SIZE, the remaining values are set to 0.
-main_memory* main_memory_initialization() {
+main_memory* init_main_memory(char* filename) {
     
     // Initialize all blocks and their data to 0
     main_memory* mem = malloc(sizeof(main_memory));
@@ -27,7 +27,7 @@ main_memory* main_memory_initialization() {
         exit(EXIT_FAILURE);
     }
     if (!mem) {
-        printf("Error: Memory pointer is NULL in main_memory_initialization.\n");
+        printf("Error: Memory pointer is NULL in init_main_memory.\n");
         return NULL;
     }
     for (int i = 0; i < NUM_OF_BLOCKS; i++) {
@@ -36,7 +36,7 @@ main_memory* main_memory_initialization() {
             mem->blocks[i].data[j] = 0; // Initialize data to 0
         }
     }
-    FILE* file = fopen("memin.txt", "r");
+    FILE* file = fopen(filename, "r");
     if (file == NULL) {
         perror("Error opening file");
         return NULL;
@@ -59,7 +59,7 @@ main_memory* main_memory_initialization() {
         int block_offset = line_number % BLOCK_SIZE;
         // Store value in the appropriate block and offset
         if (block_index < NUM_OF_BLOCKS) {
-            mem->blocks[block_index].data[block_offset] = value & 0xFFFFF; // Mask to 20 bits
+            mem->blocks[block_index].data[block_offset] = (int)(value & 0xFFFFF); // Mask to 20 bits
         }
         line_number++;
         // Stop if all blocks are filled
@@ -114,13 +114,16 @@ void write_word_to_block(main_memory* mem, uint32_t address, int word) {
 
 void free_main_memory(main_memory* memory) {
     if (!memory) {
-        printf("Error: Null pointer passed to free_main_memory.\n");
         return;
     }
-
+    // free each block
+    for (int i = 0; i < NUM_OF_BLOCKS; i++) {
+        free(memory->blocks[i].data);
+    }
     // Free the main memory itself
-    //free(memory);
+    free(memory);
 }
+
 
 
 /*******************************************************/

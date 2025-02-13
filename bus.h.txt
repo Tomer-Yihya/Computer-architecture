@@ -1,0 +1,33 @@
+
+enum BusCmd
+{
+    NoCommand = 0,
+    BusRd = 1,
+    BusRdX = 2,
+    Flush = 3
+};
+
+typedef struct
+{
+    char bus_origid;
+    enum BusCmd bus_cmd;
+    uint32_t bus_addr;
+    uint32_t bus_data;
+    bool bus_shared;
+} bus;
+
+// e.g. cores 2 and 4 is {0,1,0,1}
+void prepare_bus(bool* cores_trying_to_transact);
+
+// if your command is flush and is_available returns true
+// there is no additional follow up
+bool is_available(char core, BusCmd bus_cmd, uint32_t address, uint32_t bus_data);
+
+// call only if is_available returns true
+// and you have waited 16 cycles (including the cycle is_available_called)
+// call 4 times until you get each word in the block
+uint32_t get_word();
+
+void set_shared();
+
+void write_bus_state_to_file(FILE *bustrace_filename);

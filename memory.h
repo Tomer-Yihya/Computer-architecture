@@ -8,7 +8,6 @@
 #include <stdlib.h>
 
 
-
 /*******************************************************/
 /************* Main Memory sizes setting ***************/
 /*******************************************************/
@@ -25,7 +24,7 @@
 // Memory_block
 typedef struct {
     uint32_t tag;   
-    uint32_t data[BLOCK_SIZE];  
+    int data[BLOCK_SIZE];  
 } memory_block;
 
 typedef struct {
@@ -42,7 +41,7 @@ int string_to_int(char* str);
 
 // Initializes the main_memory array in the core structure from the file "memin.txt".
 // If the file has fewer lines than MAIN_MEMORY_SIZE, the remaining values are set to 0.
-main_memory* main_memory_initialization();
+main_memory* init_main_memory(char* filename);
 
 /*
 Returns a copy of the block from the memory array.
