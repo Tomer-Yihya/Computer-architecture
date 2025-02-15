@@ -7,8 +7,6 @@
 #include "core.h"
 #include "memory.h"
 
-//#define DEBUG true // print the coretrace data
-#define DEBUG false
 
 /*******************************************************/
 /*************** Assembler Functions *******************/
@@ -68,6 +66,7 @@ bool parse_instruction(instruction* instruction, char* str)
     instruction->ALU_result = 0;
     instruction->bus_delay = BUS_DELAY;
     instruction->block_delay = BLOCK_DELAY;
+    instruction->extra_delay = EXTRA_DELAY;
     return 1; // Success
 }
 
@@ -100,10 +99,10 @@ void init_stats(stats** stat)
     (*stat)->num_of_mem_stalls = 0;
 }
 
-// Initializes the imem and prev_imem arrays in the core structure from a file.
-void init_imem(core* cpu, const char* filename) 
+// Initializes the imem array in the core structure from a file.
+void init_imem(core* cpu) 
 {
-    FILE* file = fopen(filename, "r");
+    FILE* file = fopen(cpu->imem_filename, "r");
     if (!file) {
         perror("Error opening file");
         return;
@@ -121,42 +120,22 @@ void init_imem(core* cpu, const char* filename)
         }
         // Convert the line to an instruction and store it in imem
         if (line_to_instruction(buffer, &cpu->imem[line_index], line_index) == 1) {
-            // Copy the same instruction to prev_imem
-            cpu->prev_imem[line_index] = cpu->imem[line_index];
             line_index++;
-        } else {
+        } 
+        else {
             printf("Failed to parse line: %s\n", buffer);
         }
     }
     fclose(file);
     // Add halt instruction to the last line of imem
     if (line_index < IMEM_SIZE) {
-        cpu->imem[line_index].opcode = HALT_OPCODE;  // halt opcode == 20
-        cpu->imem[line_index].rt = 0;
-        cpu->imem[line_index].rs = 0;
-        cpu->imem[line_index].rd = 0;
-        cpu->imem[line_index].imm = 0;
-        cpu->imem[line_index].pc = -1;
-        cpu->imem[line_index].ALU_result = 0;
-        cpu->imem[line_index].bus_delay = 0;
-        cpu->imem[line_index].block_delay = 0;
-        // Copy the halt instruction to prev_imem as well
-        cpu->prev_imem[line_index] = cpu->imem[line_index];
+        turn_to_halt(&cpu->imem[line_index]);
     }
+    // Below the halt instruction add 5 stalls if there is room
     int i = 5;
     line_index++;
     while(line_index < IMEM_SIZE && i > 0) {
-        cpu->imem[line_index].opcode = STALL_OPCODE;  // stall opcode == 21
-        cpu->imem[line_index].rt = 0;
-        cpu->imem[line_index].rs = 0;
-        cpu->imem[line_index].rd = 0;
-        cpu->imem[line_index].imm = 0;
-        cpu->imem[line_index].pc = -1;
-        cpu->imem[line_index].ALU_result = 0;
-        cpu->imem[line_index].bus_delay = 0;
-        cpu->imem[line_index].block_delay = 0;
-        // Copy the halt instruction to prev_imem as well
-        cpu->prev_imem[line_index] = cpu->imem[line_index];
+        turn_to_stall(&cpu->imem[line_index]);
         line_index++;
         i--;
     }
@@ -164,13 +143,14 @@ void init_imem(core* cpu, const char* filename)
 }
 
 /*
- * Initializes the entire core structure.
- * - Sets pc to 0.
- * - Initializes registers and prev_registers to 0.
- * - Initializes imem and prev_imem according to to the file instructions.
- * - Initializes cache and prev_cache using their respective initialization function.
+ * Initializes the entire core structure:
+ * - Sets pc and cycle to 0.
+ * - Initializes output filenames.
+ * - Initializes all registers to zeros.
+ * - Initializes the cache with zeros and INVALID state.
+ * - Initializes the instruction memory from the imem file.
  */
-core* core_initialization(int core_num, char* imem_filename) 
+core* init_core(int core_num, char* imem_str, char* coretrace_str, char* regout_str, char* stats_str, char* dsram_str, char* tsram_str)
 {
     // Initialize the Program Counter (PC)
     core* cpu = malloc(sizeof(core));
@@ -178,43 +158,37 @@ core* core_initialization(int core_num, char* imem_filename)
         perror("Failed to allocate memory for core");
         exit(EXIT_FAILURE);
     }
-    cpu->done = false;
     cpu->pc = 0;
     cpu->cycle = 0;
     cpu->core_number = core_num;
-    cpu->halt_flag = false;
     cpu->done = false;
+    cpu->need_the_bus = false;
+    cpu->hold_the_bus = false;
     cpu->stats = NULL;
+    cpu->imem_filename = imem_str;
+    cpu->coretrace_filename = coretrace_str;
+    cpu->regout_filename = regout_str;
+    cpu->stats_filename = stats_str;
+    cpu->dsram_filename = dsram_str;
+    cpu->tsram_filename = tsram_str;
     // Initializing the stats fields
     init_stats(&(cpu->stats));
     // Initialize all registers to 0
     for (int i = 0; i < NUM_OF_REGISTERS; i++) {
         cpu->registers[i] = 0;
-        cpu->prev_registers[i] = 0;
     }
-    // Initialize imem and prev_imem with empty instructions
-    for (int i = 0; i < IMEM_SIZE; i++) {
-        cpu->imem[i] = (instruction){0, 0, 0, 0, 0, 0, 0};
-        cpu->prev_imem[i] = (instruction){0, 0, 0, 0, 0, 0, 0};
-    }
-
-    // Allocate and initialize SRAM
+    // Allocate and initialize the Cache
     cpu->cache = (Cache*)malloc(sizeof(Cache));
-    cpu->prev_cache = (Cache*)malloc(sizeof(Cache));
-    if (cpu->cache && cpu->prev_cache) {
+    if (cpu->cache) {
         cache_initialization(cpu->cache);
-        cache_initialization(cpu->prev_cache);
     } 
     else {
-        perror("Failed to allocate memory for SRAM");
+        perror("Failed to allocate memory for the Cache");
         exit(EXIT_FAILURE);
     }
     // Initialize the instruction memory (imem) using the provided file
-    init_imem(cpu, imem_filename);
-    // Copy imem to prev_imem to match initial state
-    for (int i = 0; i < IMEM_SIZE; i++) {
-        cpu->prev_imem[i] = cpu->imem[i];
-    }
+    init_imem(cpu);
+    open_file(&cpu->coretrace_file, cpu->coretrace_filename, "w");
     return cpu;
 }
 
@@ -268,12 +242,10 @@ instructions* create_instructions()
     return instr;
 }
 
-// Pipingline stages
 // Performing the Fetch phase
 void fetch (core* cpu, instruction* instruction) 
 {
     if(instruction->opcode == STALL_OPCODE && cpu->pc != 0){
-    //if(instruction->opcode == HALT_OPCODE || (instruction->opcode == STALL_OPCODE && cpu->pc != 0)){
         cpu->pc++;
         return;
     }
@@ -290,7 +262,7 @@ void fetch (core* cpu, instruction* instruction)
 // Performing the decode phase, Returns true if a jump should be performed and false otherwise
 bool decode (core* cpu, instruction* instruction)
 {
-    if(cpu->halt_flag || instruction->opcode == STALL_OPCODE || instruction->opcode == HALT_OPCODE) { 
+    if(instruction->opcode == STALL_OPCODE || instruction->opcode == HALT_OPCODE) { 
         return false; 
     }
     int rt = instruction->rt;
@@ -307,11 +279,6 @@ bool decode (core* cpu, instruction* instruction)
     int imm = cpu->registers[1];
     cpu->registers[1] = instruction->imm;
     int opcode = instruction->opcode;
-    // prepare for bus operation
-    if(opcode == 16 && opcode <= 17){
-        instruction->bus_delay = BUS_DELAY;
-        instruction->block_delay = BLOCK_DELAY;
-    }
     // branch resolution (if needed)
     if(opcode >= 9 && opcode <= 15){
         // new_pc = R[rd][9:0] (used in case we jump)
@@ -348,8 +315,9 @@ bool decode (core* cpu, instruction* instruction)
 // Performing the Execute phase
 void execute (core* cpu, instruction* instruction)
 {   
-    if(cpu->halt_flag || instruction->opcode == STALL_OPCODE || instruction->opcode == HALT_OPCODE) { 
-        //turn_to_stall(instruction);
+    // Do nothing if it is not an arithmetic operation or a memory operation.
+    if((instruction->opcode > 8 && instruction->opcode < 16) || instruction->opcode > 17
+     || instruction->opcode == STALL_OPCODE || instruction->opcode == HALT_OPCODE) { 
         return; 
     }
     int opcode = instruction->opcode;
@@ -368,16 +336,8 @@ void execute (core* cpu, instruction* instruction)
         case 6:  instruction->ALU_result = cpu->registers[rs] << cpu->registers[rt]; return; // sll:  R[rd] = R[rs] << R[rt]
         case 7:  instruction->ALU_result = cpu->registers[rs] >> cpu->registers[rt]; return; // sra:  R[rd] = R[rs] >> R[rt]
         case 8:  instruction->ALU_result = (uint32_t)cpu->registers[rs] >> cpu->registers[rt]; return; // srl: R[rd] = R[rs] >> R[rt] (Logical shift)
-        case 9:  return; // beq:  Handled in the Decode phase
-        case 10: return; // bne:  Handled in the Decode phase
-        case 11: return; // blt:  Handled in the Decode phase
-        case 12: return; // bgt:  Handled in the Decode phase
-        case 13: return; // ble:  Handled in the Decode phase
-        case 14: return; // ble:  Handled in the Decode phase
-        case 15: return; // jal:  Handled in the Decode phase  
         case 16: instruction->ALU_result = cpu->registers[rs] + cpu->registers[rt]; return; // lw: Prepares the result (to the MEM phase)
         case 17: instruction->ALU_result = cpu->registers[rs] + cpu->registers[rt]; return; // sw: Prepares the result (to the MEM phase)
-        case 20: cpu->halt_flag = true; return;
         default: // opcode = stall or invalid opcode 
             return;
     }
@@ -386,20 +346,24 @@ void execute (core* cpu, instruction* instruction)
 }
 
 // Performing the Mem phase, if the operation was performed, it returns true, otherwise it returns false.
-bool mem(core* cpu, instruction* instruction, cache_block data_from_memory, cache_block* data_to_memory, bool bus_ready)
+bool mem(core* cpu, instruction* instruction, cache_block* data_from_memory, uint32_t* address, bool* extra_delay)
 {    
     // No memory operation needed
     if (instruction->opcode != 16 && instruction->opcode != 17) {
         return true; 
     }
+    // The operation cannot be completed until the bus is received
+    else if(!cpu->hold_the_bus){
+        return false;
+    }
     // lw: R[rd] = MEM[R[rs]+R[rt]]
-    else if (instruction->opcode == 16) { 
-        return lw_mem(cpu, instruction, data_from_memory, data_to_memory, bus_ready);
+    else if (instruction->opcode == 16) {
+        return lw(cpu, instruction, data_from_memory, address, extra_delay);
     }
     // sw: MEM[R[rs]+R[rt]] = R[rd]
     // if (instruction->opcode == 17)
     else {
-        return sw_mem(cpu, instruction, data_from_memory, data_to_memory, bus_ready);
+        return sw(cpu, instruction, data_from_memory, extra_delay);
     }
 }
 
@@ -415,68 +379,67 @@ bool mem(core* cpu, instruction* instruction, cache_block data_from_memory, cach
 * The function updates all the data in the first cycle the bus transmits the block
 * in the next cycles it's waits 4 cycles to simulate receiving the block in parts
 */
-bool lw_mem(core* cpu, instruction* instruction, cache_block data_from_memory, cache_block* data_to_memory, bool bus_ready) 
+bool lw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint32_t* address, bool* extra_delay) 
 {
     // lw: R[rd] = MEM[R[rs]+R[rt]] = MEM[ALU_result]
-    int data = cpu->registers[instruction->ALU_result];
     // break data to address, offset and tag
-    uint32_t address = (uint32_t)data;
-    uint32_t offset = address % BLOCK_SIZE;
-    uint32_t tag = address / (BLOCK_SIZE * NUM_OF_BLOCKS);
+    *address = (uint32_t)instruction->ALU_result;;
+    uint32_t offset = *address % BLOCK_SIZE;
     // block for the search
     cache_block* c_block = NULL;
-    bool found = search_block(cpu->cache, address, c_block);
-    found = (found && (c_block->state != INVALID));
+    bool found = search_block(cpu->cache, *address);
     // Cache hit
-    if (found && c_block->tag == tag) { // search_block returns a pointer to the block if it exists.
+    if (found) { // search_block returns a pointer to the block if it exists.
+        c_block = get_cache_block(cpu->cache, *address);
         cpu->registers[instruction->ALU_result] = c_block->data[offset];
         cpu->stats->read_hit++;
         return true;
     } 
     // Cache miss
     else {
-        // still waiting for bus access 
-        if(!bus_ready) {
+        // waiting for the first word from the bus
+        if(instruction->bus_delay > 0){
+            instruction->bus_delay--;
             return false;
         }
-        // bus ready
+        // waiting for the whole block from the bus
+        else if(instruction->block_delay > 0){
+            instruction->block_delay--;
+            return false;
+        }
+        // waiting for the whole block from the bus
+        else if(instruction->extra_delay > 0){
+            instruction->extra_delay--;
+            return false;
+        }
+        // finished waiting for the whole block, update the cache and move forward (return true)
+        else if(instruction->bus_delay == 0 && instruction->block_delay == 0 && instruction->extra_delay == 0){
+            *extra_delay = false;
+            // create block to insert the cache
+            c_block = (cache_block*)malloc(sizeof(cache_block));
+            if (!c_block) {
+                printf("Memory allocation failed!\n");
+                return false;
+            }
+            c_block->tag = data_from_memory->tag;
+            c_block->state = EXCLUSIVE;
+            c_block->cycle = cpu->cycle;
+            for(int i = 0; i < CACHE_BLOCK_SIZE; i++){
+                c_block->data[i] = data_from_memory->data[i];
+            }
+            // load the word we want
+            instruction->ALU_result = data_from_memory->data[offset];
+            insert_block(cpu->cache, *address, c_block, cpu->cycle); // Overwrite the old block with the new block
+            // release the bus
+            cpu->need_the_bus = false;
+            cpu->hold_the_bus = false;
+            return true;
+        }
+        // Default value, the code should not get here
         else{
-            // waiting for the first word from the bus
-            if(instruction->bus_delay > 0){
-                instruction->bus_delay--;
-                return false;
-            }
-            // waiting for the whole block from the bus
-            else if(instruction->block_delay > 0){
-                instruction->block_delay--;
-                return false;
-            }
-            // finished waiting for the whole block, update the cache and move forward (return true)
-            else if(instruction->bus_delay == 0 && instruction->block_delay == 0){
-                // create block to insert the cache
-                c_block = (cache_block*)malloc(sizeof(cache_block));
-                if (!c_block) {
-                    printf("Memory allocation failed!\n");
-                    return false;
-                }
-                c_block->tag = data_from_memory.tag;
-                c_block->state = data_from_memory.state;
-                for(int i = 0; i < CACHE_BLOCK_SIZE; i++){
-                    c_block->data[i] = data_from_memory.data[i];
-                }
-                // save the word we want
-                instruction->ALU_result = data_from_memory.data[offset];
-                // We need to send the old block from the cache to the memory.
-                if(found) {
-                    search_block(cpu->cache, address, data_to_memory); // data_to_memory = old block from the cache
-                }
-                insert_block(cpu->cache, address, c_block); // Overwrite the old block with the new block
-                return true;
-            }
-            // Default value, the code should not get here
-            else{
-                return false;
-            }
+            cpu->need_the_bus = false;
+            cpu->hold_the_bus = false;
+            return false;
         }
     }
 }
@@ -493,7 +456,7 @@ bool lw_mem(core* cpu, instruction* instruction, cache_block data_from_memory, c
 * The function updates all the data in the first cycle the bus transmits the block
 * in the next cycles it's waits 4 cycles to simulate receiving the block in parts
 */
-bool sw_mem(core* cpu, instruction* instruction, cache_block data_from_memory, cache_block* data_to_memory, bool bus_ready)
+bool sw(core* cpu, instruction* instruction, cache_block* data_from_memory, bool* extra_delay)
 {
     // sw: MEM[R[rs]+R[rt]] = R[rd]
     int data = instruction->ALU_result;
@@ -502,8 +465,7 @@ bool sw_mem(core* cpu, instruction* instruction, cache_block data_from_memory, c
     uint32_t tag = address / (BLOCK_SIZE * NUM_OF_BLOCKS);
     // block for the search
     cache_block* c_block = NULL;
-    bool found = search_block(cpu->cache, address, c_block);
-    found = (found && (c_block->state != INVALID));
+    bool found = search_block(cpu->cache, address);
     // cache hit
     if(found && c_block->tag == tag) {
         c_block->data[offset] = cpu->registers[instruction->rd];
@@ -513,47 +475,44 @@ bool sw_mem(core* cpu, instruction* instruction, cache_block data_from_memory, c
     }
     // Cache miss
     else {
-        // still waiting for bus access 
-        if(!bus_ready) {
+        // waiting for the first word from the bus
+        if(instruction->bus_delay > 0){
+            instruction->bus_delay--;
             return false;
         }
-        // bus ready
+        // waiting for the whole block from the bus
+        else if(instruction->block_delay > 0){
+            instruction->block_delay--;
+            return false;
+        }
+        // finished waiting for the whole block, update the cache and move forward (return true)
+        else if(instruction->bus_delay == 0 && instruction->block_delay == 0 && instruction->extra_delay == 0){
+            *extra_delay = false;
+            // create block to insert the cache
+            c_block = (cache_block*)malloc(sizeof(cache_block));
+            if (!c_block) {
+                printf("Memory allocation failed!\n");
+                return false;
+            }
+            c_block->tag = data_from_memory->tag;
+            c_block->state = MODIFIED;
+            c_block->cycle = cpu->cycle;
+            for(int i = 0; i < CACHE_BLOCK_SIZE; i++){
+                c_block->data[i] = data_from_memory->data[i];
+            }
+            c_block->data[offset] = cpu->registers[instruction->rd];
+            insert_block(cpu->cache, address, c_block, cpu->cycle); // Overwrite the old block with the new block
+            cpu->stats->write_miss++; // count the miss just one
+            // release the bus
+            cpu->need_the_bus = false;
+            cpu->hold_the_bus = false;
+            return true;
+        }
+        // Default value, the code should not get here
         else {
-            // waiting for the first word from the bus
-            if(instruction->bus_delay > 0){
-                instruction->bus_delay--;
-                return false;
-            }
-            // waiting for the whole block from the bus
-            else if(instruction->block_delay > 0){
-                instruction->block_delay--;
-                return false;
-            }
-            // finished waiting for the whole block, update the cache and move forward (return true)
-            else if(instruction->bus_delay == 0 && instruction->block_delay == 0){
-                // create block to insert the cache
-                c_block = (cache_block*)malloc(sizeof(cache_block));
-                if (!c_block) {
-                    printf("Memory allocation failed!\n");
-                    return false;
-                }
-                c_block->tag = data_from_memory.tag;
-                for(int i = 0; i < CACHE_BLOCK_SIZE; i++){
-                    c_block->data[i] = data_from_memory.data[i];
-                }
-                c_block->state = SHARED;
-                // We need to send the old block from the cache to the memory.
-                if(found){
-                    search_block(cpu->cache, address, data_to_memory); // data_to_memory = old block from the cache
-                }
-                insert_block(cpu->cache, address, c_block); // Overwrite the old block with the new block
-                cpu->stats->write_miss++; // count the miss just one
-                return true;
-            }
-            // Default value, the code should not get here
-            else{
-                return false;
-            }
+            cpu->need_the_bus = false;
+            cpu->hold_the_bus = false;
+            return false;
         }
     }
 }
@@ -571,7 +530,6 @@ void write_beck (core* cpu, instruction* instruction)
     if((0 <= opcode && opcode <= 8  && (rd == 0 || rd == 1)) || opcode > 8){
         return;
     }
-    // update register $imm to the imm value
     // perform only R-type (arithmetic operation), if opcode isn't R-type do nothing
     if(opcode >= 0 && opcode <= 8) {
         cpu->registers[rd] = instruction->ALU_result;
@@ -587,11 +545,17 @@ void write_beck (core* cpu, instruction* instruction)
 
 // performing one step in the core pipeline
 // Calculates pipeline delays and updates instructions accordingly
-void pipeline_step(FILE* core_trace_file, core* cpu, instructions* instructions, cache_block data_from_memory, cache_block* data_to_memory, bool bus_ready) 
+cache_block* pipeline_step(core* cpu, instructions* instructions, cache_block* data_from_memory, uint32_t* address, bool* extra_delay) 
 {    
-    if(cpu->done) {
-        return;
+    if(cpu->done) { return NULL; } // The core has finished executing all instructions.
+
+    cache_block* c_block = malloc(sizeof(core));
+    if (!cpu) {
+        perror("Failed to allocate memory for core");
+        exit(EXIT_FAILURE);
     }
+    c_block = NULL;
+
     bool forward_fetch = true;
     bool forward_decode = true;
     bool forward_execute = true;
@@ -623,7 +587,7 @@ void pipeline_step(FILE* core_trace_file, core* cpu, instructions* instructions,
     int prev_pc = cpu->pc;
     bool jump_taken = decode(cpu, instructions->decode);
     execute(cpu, instructions->execute); 
-    bool mem_hazard = !mem(cpu, instructions->memory, data_from_memory, data_to_memory, bus_ready);
+    bool mem_hazard = !mem(cpu, instructions->memory, data_from_memory, address, extra_delay);
     // Memory Hazard (cache miss)  → Insert 16 stalls
     if (mem_hazard) {
         forward_fetch = false;
@@ -632,24 +596,22 @@ void pipeline_step(FILE* core_trace_file, core* cpu, instructions* instructions,
         forward_memory = false;
         cpu->stats->num_of_mem_stalls++;
     }
-    if (DEBUG) { print_core_trace_hex(cpu, instructions); }
-    write_line_to_core_trace_file(core_trace_file, cpu, instructions);
+    //print_core_trace_hex(cpu, instructions);
+    write_line_to_core_trace_file(cpu, instructions);
     write_beck(cpu, instructions->write_back);
     cpu->cycle++;
     // Advancing the stages in the core pipeline
     if(forward_memory) { copy_instruction(instructions->write_back, instructions->memory);  }
-    else {  
-        turn_to_stall(instructions->write_back); 
-    }
+    else { turn_to_stall(instructions->write_back);  } // mem Not finished - insert stall
     if(forward_execute){ copy_instruction(instructions->memory, instructions->execute); }
-    else {  
-        if(forward_memory){
-            turn_to_stall(instructions->memory); 
+    else {  // exe need to wait
+        if(forward_memory){ // if mem is getting forward and exe not - insert stall
+            turn_to_stall(instructions->memory);  
         }
     }
     if(forward_decode) { 
         copy_instruction(instructions->execute, instructions->decode);
-    // We have reached the halt command. We will continue until the pipeline is emptied.
+        // We have reached the halt command. We will continue until the pipeline is emptied but turn fetch and decode to stalls.
         if(instructions->execute->opcode == HALT_OPCODE) {
             turn_to_stall(instructions->fetch);
             turn_to_stall(instructions->decode);
@@ -678,9 +640,13 @@ void pipeline_step(FILE* core_trace_file, core* cpu, instructions* instructions,
         cpu->stats->total_instructions = (cpu->cycle -  cpu->stats->num_of_decode_stalls);
         // decode stalls = total stalls - mem_stalls + 4 (the number of stalls for filling the pipeline)
         cpu->stats->num_of_decode_stalls = (cpu->stats->num_of_decode_stalls - (cpu->stats->num_of_mem_stalls + 4));
-        cpu->done = true;    
+        cpu->done = true;
+        fclose(cpu->coretrace_file);   
     }
-
+    if(search_block(cpu->cache,*address)) {
+        c_block = get_cache_block(cpu->cache, *address);
+    }
+    return c_block;
 }
 
 // Check if all instructions are stalls
@@ -701,12 +667,16 @@ bool done(core* cpu, instructions* instructions)
 void free_core(core* cpu)
 {
     if (!cpu) {
-        printf("Error: Null pointer passed to free_core.\n");
         return;
     }
     // Free the cache if it exists
-    free_cache(cpu->cache);
-    
+    if(cpu->cache){
+        free_cache(cpu->cache);
+    }
+    // Free the stats struct
+    if(cpu->stats){
+        free(cpu->stats);
+    }
     // Free the core itself
     free(cpu);
 }
@@ -714,7 +684,9 @@ void free_core(core* cpu)
 // Frees the structure with the 5 instructions
 void free_instructions(instructions* instructions)
 {
-    if (!instructions) return;
+    if (!instructions) {
+        return;
+    }
     free(instructions->fetch);
     free(instructions->decode);
     free(instructions->execute);
@@ -733,41 +705,57 @@ void turn_to_stall(instruction* instruction)
     instruction->rd = 0;
     instruction->imm = 0;
     instruction->ALU_result = 0;
+    instruction->bus_delay = 0;
+    instruction->block_delay = 0;
+}
+
+// turn instruction to halt
+void turn_to_halt(instruction* instruction)
+{
+    instruction->opcode = HALT_OPCODE;
+    instruction->pc = -1;
+    instruction->rt = 0;
+    instruction->rs = 0;
+    instruction->rd = 0;
+    instruction->imm = 0;
+    instruction->ALU_result = 0;
+    instruction->bus_delay = 0;
+    instruction->block_delay = 0;
 }
 
 // Writes a line to the coreNUMtrace.txt file after each cycle
-void write_line_to_core_trace_file(FILE* coretrace_filename, core* cpu, instructions* instructions) 
+void write_line_to_core_trace_file(core* cpu, instructions* instructions) 
 {
-    if (!coretrace_filename || !cpu || !cpu->cache) {
+    if (!cpu) {
         printf("Error: Invalid file pointer or uninitialized core/cache.\n");
         return;
     }
     // Write the clock cycle number
-    fprintf(coretrace_filename, "%d ", cpu->cycle);
+    fprintf(cpu->coretrace_file, "%d ", cpu->cycle);
     // Write the PC values for each pipeline stage
-    if(instructions->fetch->pc != -1) { fprintf(coretrace_filename, "%03X ", instructions->fetch->pc); }
-    else{ fprintf(coretrace_filename, "--- "); }
+    if(instructions->fetch->pc != -1) { fprintf(cpu->coretrace_file, "%03X ", instructions->fetch->pc); }
+    else{ fprintf(cpu->coretrace_file, "--- "); }
 
-    if(instructions->decode->pc != -1) { fprintf(coretrace_filename, "%03X ", instructions->decode->pc); }
-    else{ fprintf(coretrace_filename, "--- "); }
+    if(instructions->decode->pc != -1) { fprintf(cpu->coretrace_file, "%03X ", instructions->decode->pc); }
+    else{ fprintf(cpu->coretrace_file, "--- "); }
 
-    if(instructions->execute->pc != -1) { fprintf(coretrace_filename, "%03X ", instructions->execute->pc); }
-    else{ fprintf(coretrace_filename, "--- "); }
+    if(instructions->execute->pc != -1) { fprintf(cpu->coretrace_file, "%03X ", instructions->execute->pc); }
+    else{ fprintf(cpu->coretrace_file, "--- "); }
 
-    if(instructions->memory->pc != -1) { fprintf(coretrace_filename, "%03X ", instructions->memory->pc); }
-    else{ fprintf(coretrace_filename, "--- "); }
+    if(instructions->memory->pc != -1) { fprintf(cpu->coretrace_file, "%03X ", instructions->memory->pc); }
+    else{ fprintf(cpu->coretrace_file, "--- "); }
     
-    if(instructions->write_back->pc != -1) { fprintf(coretrace_filename, "%03X ", instructions->write_back->pc); }
-    else{ fprintf(coretrace_filename, "--- "); }
+    if(instructions->write_back->pc != -1) { fprintf(cpu->coretrace_file, "%03X ", instructions->write_back->pc); }
+    else{ fprintf(cpu->coretrace_file, "--- "); }
     
     // Write the register values (starting from R2)
     for (int i = 2; i < NUM_OF_REGISTERS; i++) {
-        fprintf(coretrace_filename, "%08X ", cpu->registers[i]);
+        fprintf(cpu->coretrace_file, "%08X ", cpu->registers[i]);
     }
     // End the line
-    fprintf(coretrace_filename, "\n");
+    fprintf(cpu->coretrace_file, "\n");
     if(done(cpu, instructions)){
-        fclose(coretrace_filename);
+        fclose(cpu->coretrace_file);
     }
 }
 
@@ -776,22 +764,19 @@ void write_line_to_core_trace_file(FILE* coretrace_filename, core* cpu, instruct
 /*************** Create output files *******************/
 /*******************************************************/
 
-void create_output_files(core* cpu, char* regout_filename, char* stats_filename, char* dsram_filename, char* tsram_filename)
+void create_output_files(core* cpu)
 {
-    create_regout_file(cpu, regout_filename);
-    create_stats_file(cpu, stats_filename);
-    create_dsram_file(cpu, dsram_filename);
-    create_tsram_file(cpu, tsram_filename);
+    create_regout_file(cpu);
+    create_stats_file(cpu);
+    create_dsram_file(cpu);
+    create_tsram_file(cpu);
 }
 
 // Generates the file regout.txt with the register values ​​at the end of the run
-void create_regout_file(core* cpu, char* filename) 
+void create_regout_file(core* cpu) 
 {
-    FILE* regout_file = fopen(filename, "w");
-    if (!regout_file) {
-        printf("Error: Failed to open regout%d.txt for writing.\n",cpu->core_number);
-        return;
-    }
+    FILE* regout_file = NULL;
+    open_file(&regout_file, cpu->regout_filename, "w");
     // Write the register values (starting from R2)
     for (int i = 2; i < NUM_OF_REGISTERS; i++) {
         fprintf(regout_file, "%08X\n", cpu->registers[i]);
@@ -801,32 +786,30 @@ void create_regout_file(core* cpu, char* filename)
 }
 
 // Generates the file stats.txt
-void create_stats_file(core* cpu, char* filename) 
+void create_stats_file(core* cpu) 
 {
-    FILE* stats_file;
-    stats_file = fopen(filename, "w");
-    if (!stats_file) {
-        printf("Error: Failed to open stats%d.txt for writing.\n",cpu->core_number);
-        return;
-    }
+    FILE* file = NULL;
+    open_file(&file, cpu->stats_filename, "w");
+    
     // Write the values
-    fprintf(stats_file, "cycles %d\n", cpu->stats->total_cycles);
-    fprintf(stats_file, "instructions %d\n", cpu->stats->total_instructions);
-    fprintf(stats_file, "read_hit %d\n", cpu->stats->read_hit);
-    fprintf(stats_file, "write_hit %d\n", cpu->stats->write_hit);
-    fprintf(stats_file, "read_miss %d\n", cpu->stats->read_miss);
-    fprintf(stats_file, "write_miss %d\n", cpu->stats->write_miss);
-    fprintf(stats_file, "decode_stall %d\n", cpu->stats->num_of_decode_stalls);
-    fprintf(stats_file, "mem_stall %d\n", cpu->stats->num_of_mem_stalls);
+    fprintf(file, "cycles %d\n", cpu->stats->total_cycles);
+    fprintf(file, "instructions %d\n", cpu->stats->total_instructions);
+    fprintf(file, "read_hit %d\n", cpu->stats->read_hit);
+    fprintf(file, "write_hit %d\n", cpu->stats->write_hit);
+    fprintf(file, "read_miss %d\n", cpu->stats->read_miss);
+    fprintf(file, "write_miss %d\n", cpu->stats->write_miss);
+    fprintf(file, "decode_stall %d\n", cpu->stats->num_of_decode_stalls);
+    fprintf(file, "mem_stall %d\n", cpu->stats->num_of_mem_stalls);
     
     // Close the file
-    fclose(stats_file);
+    fclose(file);
 }
 
 // Generates the file dsram.txt
-void create_dsram_file(core* cpu, char* filename)
+void create_dsram_file(core* cpu)
 {
-    FILE* file = fopen(filename, "w");
+    FILE* file = NULL;
+    open_file(&file, cpu->dsram_filename, "w");
     if (!file) {
         perror("Error opening dsram file");
         return;
@@ -840,13 +823,10 @@ void create_dsram_file(core* cpu, char* filename)
 }
 
 // Generates the file tsram.txt
-void create_tsram_file(core* cpu, char* filename)
+void create_tsram_file(core* cpu)
 {
-    FILE* file = fopen(filename, "w");
-    if (!file) {
-        perror("Error opening tsram file");
-        return;
-    }
+    FILE* file = NULL;
+    open_file(&file, cpu->tsram_filename, "w");
     for (int i = 0; i < NUM_BLOCKS; i++) {
         uint32_t tag = cpu->cache->blocks[i].tag;
         MESI_state state = cpu->cache->blocks[i].state;
@@ -856,7 +836,16 @@ void create_tsram_file(core* cpu, char* filename)
     fclose(file);
 }
 
-
+// Opens a single file and returns an error if not opened.
+void open_file(FILE** f, char* filename, char* c)
+{
+    *f = fopen(filename, c);
+    // Checking if all file opened successfully
+    if (!f) { 
+        printf("Error opening file: %s\n", filename);
+        exit(EXIT_FAILURE);
+    }
+}
 
 /*******************************************************/
 /*************** Debugging functions *******************/
@@ -865,56 +854,17 @@ void create_tsram_file(core* cpu, char* filename)
 // Test core with no memory opertions, executes all instructions in the core instruction memory
 void run_core(core* cpu, main_memory* memory)
 {
-    char* coretrace_filename, *regout_filename, *stats_filename, *dsram_filename, *tsram_filename;
-    if(cpu->core_number == 0) { 
-        coretrace_filename = "core0trace.txt";
-        regout_filename = "regout0.txt";
-        stats_filename  = "stats0.txt";
-        dsram_filename = "dsram0.txt";
-        tsram_filename = "tsram0.txt";
-    }
-    else if(cpu->core_number == 1) { 
-        coretrace_filename = "core1trace.txt";
-        regout_filename = "regout1.txt";
-        stats_filename = "stats1.txt";
-        dsram_filename = "dsram1.txt";
-        tsram_filename = "tsram1.txt";
-    }
-    else if(cpu->core_number == 2) { 
-        coretrace_filename = "core2trace.txt";
-        regout_filename = "regout2.txt";
-        stats_filename = "stats2.txt";
-        dsram_filename = "dsram2.txt";
-        tsram_filename = "tsram2.txt";
-    }
-    // if(cpu->core_number == 3) 
-    else { 
-        coretrace_filename = "core3trace.txt";
-        regout_filename = "regout3.txt";
-        stats_filename = "stats3.txt";
-        dsram_filename = "dsram3.txt";
-        tsram_filename = "tsram3.txt";
-    }
-    FILE* coretrace_file;
-    coretrace_file = fopen(coretrace_filename, "w");
-    if (!coretrace_file) {
-        printf("Error: Failed to open core%dtrace.txt for writing.\n", cpu->core_number);
-        return;
-    }
     // Allocate memory for the instructions
     instructions* instructions = create_instructions();
-    cache_block data_from_memory;
-    cache_block* data_to_memory = NULL;
-    bool bus_ready = true;
+    cache_block* data_from_memory = NULL;
+    bool extra_delay = false;
+    uint32_t address = 0; 
     while(!done(cpu, instructions) || cpu->pc == 0) {
         // Performing the actions
-        pipeline_step(coretrace_file, cpu, instructions, data_from_memory, data_to_memory, bus_ready);
-        if(cpu->cycle >= 47) {
-            bus_ready = true;
-        }
+        pipeline_step(cpu, instructions, data_from_memory, &address, &extra_delay);
     }
     // create the regout.txt file
-    create_output_files(cpu, regout_filename, stats_filename, dsram_filename, tsram_filename);
+    create_output_files(cpu);
     // Ensure to free allocated memory at the end of the function
     free_instructions(instructions);
     free_core(cpu);
@@ -983,7 +933,6 @@ char* imm_to_string(int imm)
         perror("Failed to allocate memory for imm_to_string");
         return NULL;
     }
-
     // Convert the integer to a string
     snprintf(result, 12, "%d", imm);
     return result;
@@ -1081,7 +1030,6 @@ void print_imem(core* cpu)
             }
         }
     }
-
     printf("End of Instruction Memory.\n\n");
 }
 
@@ -1092,13 +1040,8 @@ void print_core_status(core* cpu)
         printf("Error: Core or Cache is not initialized.\n");
         return;
     }
-
-    // Print the cycle, pc, and halt flag
-    printf("cycle = %d, pc = %d, halt_flag = %s\n", 
-           cpu->cycle, 
-           cpu->pc, 
-           cpu->halt_flag ? "true" : "false");
-
+    // Print the cycle and pc
+    printf("cycle = %d, pc = %d, ", cpu->cycle, cpu->pc);
     // Print the registers
     printf("registers = { ");
     for (int i = 0; i < NUM_OF_REGISTERS; i++) {
@@ -1108,11 +1051,10 @@ void print_core_status(core* cpu)
         }
     }
     printf(" }\n");
-
     // Print non-zero blocks in the cache
-    printf("Cache Content (Non-Zero Blocks):\n");
-    print_cache(cpu->cache);
-    printf("\n");
+    //printf("Cache Content (Non-Zero Blocks):\n");
+    //print_cache(cpu->cache);
+    //printf("\n");
 }
 
 // print 5 rows of the pipeline levels in hex to see it contennet
@@ -1151,12 +1093,8 @@ void print_core(core* cpu)
         printf("Error: Core or Cache is not initialized.\n");
         return;
     }
-
-    // Print the cycle, pc, and halt flag
-    printf("cycle = %d, pc = %d, halt_flag = %s, ", 
-           cpu->cycle, 
-           cpu->pc, 
-           cpu->halt_flag ? "true" : "false");
+    // Print the cycle and pc
+    printf("cycle = %d, pc = %d ", cpu->cycle, cpu->pc);
 
     // Print the registers
     printf("registers = { ");

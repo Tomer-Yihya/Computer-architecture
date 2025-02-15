@@ -26,10 +26,6 @@ main_memory* init_main_memory(char* filename) {
         perror("Failed to allocate memory for main memory");
         exit(EXIT_FAILURE);
     }
-    if (!mem) {
-        printf("Error: Memory pointer is NULL in init_main_memory.\n");
-        return NULL;
-    }
     for (int i = 0; i < NUM_OF_BLOCKS; i++) {
         mem->blocks[i].tag = i; // Set the tag for each block based on its index
         for (int j = 0; j < BLOCK_SIZE; j++) {
@@ -76,20 +72,27 @@ Returns a copy of the block from the memory array.
 Adjusts to memory boundaries so that there is no overflow.
 If the array is not initialized, an empty block is returned.
 */
-memory_block get_block(main_memory* mem, int tag) {
+memory_block* get_block(main_memory* mem, int tag) {
     if (!mem) {
         printf("Error: Memory is not initialized.\n");
-        memory_block empty_block = {0}; // Return an empty block in case of error
-        return empty_block;
+        return NULL;
     }
     if (tag < 0) {
         printf("Error: Invalid tag value in get_block.\n");
-        memory_block empty_block = {0}; // Return an empty block in case of error
-        return empty_block;
+        return NULL;
+    }
+    memory_block* mem_block = malloc(sizeof(memory_block));
+    if (!mem_block) {
+        perror("Failed to allocate memory for memory block");
+        exit(EXIT_FAILURE);
     }
     int adjusted_index = tag % NUM_OF_BLOCKS;
     // Return a copy of the appropriate block
-    return mem->blocks[adjusted_index];
+    mem_block->tag = mem->blocks[adjusted_index].tag;
+    for(int i = 0; i < BLOCK_SIZE; i++){
+        mem_block->data[i] = mem->blocks[adjusted_index].data[i];
+    }
+    return mem_block;
 }
 
 // Writes a word (int) to a specific address in memory (at the appropriate location in the block)
@@ -110,6 +113,26 @@ void write_word_to_block(main_memory* mem, uint32_t address, int word) {
     mem->blocks[index].data[offset] = word; // Write the word at the correct offset
     mem->blocks[index].tag = tag;           // Update the tag for the block
 }
+
+
+void insert_block_to_memory(main_memory* mem, int tag, memory_block new_block) 
+{
+    if (!mem) {
+        printf("Error: Memory pointer is NULL in write_block_to_memory.\n");
+        return;
+    }
+    if (tag < 0) {
+        printf("Error: Invalid tag value in write_block_to_memory.\n");
+        return;
+    }
+    // Compute the index in memory based on the tag
+    int index = tag % NUM_OF_BLOCKS;
+    // Replace the old block with the new block
+    mem->blocks[index] = new_block;
+    // Update the tag of the new block
+    mem->blocks[index].tag = tag;
+}
+
 
 
 void free_main_memory(main_memory* memory) {

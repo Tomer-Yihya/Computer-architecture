@@ -30,7 +30,8 @@ typedef enum {
 // cache_block
 typedef struct {
     uint32_t tag;
-    MESI_state state;           
+    MESI_state state;
+    int cycle;         
     int data[CACHE_BLOCK_SIZE];  
 } cache_block;
 
@@ -56,7 +57,11 @@ void cache_initialization(Cache *cache);
 * The function looks for the block in the cache, if it is found it returns true and otherwise it returns false.
 * In addition, the function returns a copy of the block via the pointer it received as an argument
 */
-bool search_block(Cache *cache, uint32_t address, cache_block* block);
+bool search_block(Cache *cache, uint32_t address);
+
+
+// return pointer to copy of the cache block
+cache_block* get_cache_block(Cache *cache, uint32_t address);
 
 
 /*
@@ -64,7 +69,7 @@ bool search_block(Cache *cache, uint32_t address, cache_block* block);
  * If a block exists at the target index, it will be overwritten.
  * Returns true on success and false in case of a failure.
  */
-bool insert_block(Cache *cache, uint32_t address, cache_block *new_block);
+bool insert_block(Cache *cache, uint32_t address, cache_block *new_block, int cycle);
 
 
 /*

@@ -22,16 +22,6 @@
 /*********************  Structs ************************/
 /*******************************************************/
 
-// All the files we need
-typedef struct {
-    FILE* memout;
-    FILE* core0trace;
-    FILE* core1trace;
-    FILE* core2trace;
-    FILE* core3trace;
-    
-} files;
-
 
 typedef struct {
     char* sim_str;
@@ -63,7 +53,8 @@ typedef struct {
     char* stats2_str;
     char* stats3_str;
 
-} filesnames;
+} filenames;
+
 
 // Core structures
 typedef struct {
@@ -72,10 +63,12 @@ typedef struct {
     core* core1;
     core* core2;
     core* core3;
+    core* round_robin_queue [NUM_OF_CORES];
     instructions* core0_instructions;
     instructions* core1_instructions;
     instructions* core2_instructions;
     instructions* core3_instructions;
+    filenames* filenames;
 
 } processor;
 
@@ -84,6 +77,15 @@ typedef struct {
 /*************** Processor Functions *******************/
 /*******************************************************/
 
+// Initializes file names to the argv[] arguments
+void set_file_names(filenames* filenames, char* argv[]);
+
+
+
+// Initializes file names to the defined default values
+void set_default_file_names(filenames* filenames);
+
+
 /*
  * Initializes the entire processor structure.
  * - Sets pc to 0.
@@ -91,63 +93,40 @@ typedef struct {
  * - Initializes each core imem and prev_imem according to to the file instructions.
  * - Initializes each core cache and prev_cache using their respective initialization function.
  */
-processor* init_processor(filesnames* filesnames);
-
-// Opens a single file and returns an error if not opened.
-void open_file(FILE* f, char* filename, char c);
-
-// Opens all files
-void open_files(files* f, filesnames* filesnames);
-
-// Closes all open files.
-void close_files(files* f);
-
-
-
-
-// Pipingline stages
-// Performing the Fetch phase
-void fetch (core* cpu, instruction* instruction);
-
-// Performing the decode phase, Returns true if a jump should be performed and false otherwise
-bool decode (core* cpu, instruction* instruction);
-
-// Performing the Execute phase
-void execute (core* cpu, instruction* instruction);
-
-// Performing the Mem phase
-void mem(core* cpu, instruction* instruction, main_memory* memory);
-
-// Performing the WB phase
-void write_beck (core* cpu, instruction* instruction);
-
-// performing one step in the core pipeline
-// Calculates pipeline delays and updates instructions accordingly
-void pipeline_step(filesnames* filesnames, core* cpu, main_memory* memory, instructions* instructions);
-
-
-
+processor* init_processor();
 
 // Executes the processor run
-void run(filesnames* filesnames, processor* cpu, main_memory* memory);
+void run(processor* cpu, main_memory* memory);
+
 
 // Check if all the cores finished running
 bool finish(processor* cpu);
 
-// Frees the core's memory including its cache
+
+// Frees the cores memory including its cache
 void free_processor(processor* cpu);
 
 
-void convert_cache_block_to_mem_block(cache_block* c_block, memory_block* m_block);
+
+memory_block* convert_cache_block_to_mem_block(cache_block* c_block);
 
 
-void convert_mem_block_to_cache_block(cache_block* c_block, memory_block* m_block);
 
+cache_block* convert_mem_block_to_cache_block(memory_block* m_block);
+
+
+
+int is_block_modified(processor* cpu, uint32_t address, bool* modified_block_exists, bool* about_to_be_overwritten);
+
+
+
+void update_cache_stats(cache_block* core0_block, cache_block* core1_block, cache_block* core2_block, cache_block* core3_block, cache_block* mem_block);
 
 /*******************************************************/
 /*************** Debugging functions *******************/
 /*******************************************************/
 
+void print_bus_status(processor* cpu);
 
 
 #endif // PROCESSOR_H

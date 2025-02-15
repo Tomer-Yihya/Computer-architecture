@@ -48,10 +48,13 @@ Returns a copy of the block from the memory array.
 Adjusts to memory boundaries so that there is no overflow.
 If the array is not initialized, an empty block is returned.
 */
-memory_block get_block(main_memory* mem, int tag);
+memory_block* get_block(main_memory* mem, int tag);
 
 // Writes a word (int) to a specific address in memory (at the appropriate location in the block)
 void write_word_to_block(main_memory* mem, uint32_t address, int word);
+
+
+void insert_block_to_memory(main_memory* mem, int tag, memory_block new_block);
 
 
 void free_main_memory(main_memory* memory);

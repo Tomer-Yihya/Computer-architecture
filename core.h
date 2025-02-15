@@ -23,6 +23,7 @@
 #define STALL_OPCODE 21
 #define BUS_DELAY 16  // Delay until the first word is retrieved from memory
 #define BLOCK_DELAY 4 // Delay until the entire block is received
+#define EXTRA_DELAY 4 // Delay until the entire block is received
 
 
 /*******************************************************/
@@ -40,6 +41,7 @@ typedef struct {
     int ALU_result;
     int bus_delay;
     int block_delay;
+    int extra_delay;
 } instruction;
 
 
@@ -70,17 +72,23 @@ typedef struct {
     int pc;
     int cycle;
     int core_number;
-    // this cycle
     int registers[NUM_OF_REGISTERS];
     instruction imem[IMEM_SIZE];
     Cache* cache;
     stats* stats;
-    // prev cycle
-    int prev_registers[NUM_OF_REGISTERS];
-    instruction prev_imem[IMEM_SIZE];
-    Cache* prev_cache;
-    bool halt_flag; // halt_flag = 1 if we get "halt" opcode - the core know to finish and stop
-    bool done;      // true if the core finish the imem instructions
+    // flags
+    bool done;  // true if the core finish the imem instructions
+    bool need_the_bus;
+    bool hold_the_bus;
+    // files names
+    char* imem_filename;
+    char* coretrace_filename;
+    char* regout_filename;
+    char* stats_filename;
+    char* dsram_filename;
+    char* tsram_filename;
+    // files
+    FILE* coretrace_file;
 
 } core;
 
@@ -116,17 +124,18 @@ int line_to_instruction(char* line, instruction* inst, int line_index);
 // Initializes the stats structure
 void init_stats(stats** stat);
 
-// Initializes the imem and prev_imem arrays in the core structure from a file.
-void init_imem(core* cpu, const char* filename);
+// Initializes the imem array in the core structure from a file.
+void init_imem(core* cpu);
 
 /*
- * Initializes the entire core structure.
- * - Sets pc to 0.
- * - Initializes registers and prev_registers to 0.
- * - Initializes imem and prev_imem according to to the file instructions.
- * - Initializes cache and prev_cache using their respective initialization function.
+ * Initializes the entire core structure:
+ * - Sets pc and cycle to 0.
+ * - Initializes output filenames.
+ * - Initializes all registers to zeros.
+ * - Initializes the cache with zeros and INVALID state.
+ * - Initializes the instruction memory from the imem file.
  */
-core* core_initialization(int core_num, char* imem_filename);
+core* init_core(int core_num, char* imem_str, char* coretrace_str, char* regout_str, char* stats_str, char* dsram_str, char* tsram_str);
 
 // Extracts the low 9 bits and returns them as an int - used in jump instructions
 int jump_to_pc(int imm);
@@ -148,7 +157,7 @@ bool decode (core* cpu, instruction* instruction);
 void execute (core* cpu, instruction* instruction);
 
 // Performing the Mem phase, if the operation was performed, it returns true, otherwise it returns false.
-bool mem(core* cpu, instruction* instruction, cache_block data_from_memory, cache_block* data_to_memory, bool bus_ready);
+bool mem(core* cpu, instruction* instruction, cache_block* data_from_memory, uint32_t* address, bool* extra_delay);
 
 /*
 * Returns true if the lw operation is complete and the value is loaded from cache/memory
@@ -162,7 +171,7 @@ bool mem(core* cpu, instruction* instruction, cache_block data_from_memory, cach
 * The function updates all the data in the first cycle the bus transmits the block
 * in the next cycles it's waits 4 cycles to simulate receiving the block in parts
 */
-bool lw_mem(core* cpu, instruction* instruction, cache_block data_from_memory, cache_block* data_to_memory, bool data_valid);
+bool lw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint32_t* address, bool* extra_delay);
 
 /*
 * Returns true if the sw operation is complete and the value is stored in the cache/memory
@@ -176,14 +185,14 @@ bool lw_mem(core* cpu, instruction* instruction, cache_block data_from_memory, c
 * The function updates all the data in the first cycle the bus transmits the block
 * in the next cycles it's waits 4 cycles to simulate receiving the block in parts
 */
-bool sw_mem(core* cpu, instruction* instruction, cache_block data_from_memory, cache_block* data_to_memory, bool bus_ready);
+bool sw(core* cpu, instruction* instruction, cache_block* data_from_memory, bool* extra_delay);
 
 // Performing the WB phase
 void write_beck (core* cpu, instruction* instruction);
 
 // performing one step in the core pipeline
 // Calculates pipeline delays and updates instructions accordingly
-void pipeline_step(FILE* core_trace_file, core* cpu, instructions* instructions, cache_block data_from_memory, cache_block* data_to_memory, bool bus_ready);
+cache_block* pipeline_step(core* cpu, instructions* instructions, cache_block* data_from_memory, uint32_t* address, bool* extra_delay);
 
 // Check if all instructions are stalls
 bool done(core* cpu, instructions* instructions);
@@ -197,27 +206,33 @@ void free_instructions(instructions* instructions);
 // turn instruction to stall
 void turn_to_stall(instruction* instruction);
 
+// turn instruction to halt
+void turn_to_halt(instruction* instruction);
+
 // Writes a line to the coreNUMtrace.txt file after each cycle
-void write_line_to_core_trace_file(FILE* coretrace_filename, core* cpu, instructions* instructions);
+void write_line_to_core_trace_file(core* cpu, instructions* instructions);
 
 
 /*******************************************************/
 /*************** Create output files *******************/
 /*******************************************************/
 
-void create_output_files(core* cpu, char* regout_filename, char* stats_filename, char* dsram_filename, char* tsram_filename);
+void create_output_files(core* cpu);
 
 // Generates the file "regout.txt"
-void create_regout_file(core* cpu, char* filename);
+void create_regout_file(core* cpu);
 
 // Generates the file "stats.txt"
-void create_stats_file(core* cpu, char* filename);
+void create_stats_file(core* cpu);
 
 // Generates the file dsram.txt
-void create_dsram_file(core* cpu, char* filename);
+void create_dsram_file(core* cpu);
 
 // Generates the file tsram.txt
-void create_tsram_file(core* cpu, char* filename);
+void create_tsram_file(core* cpu);
+
+// Opens a single file and returns an error if not opened.
+void open_file(FILE** f, char* filename, char* c);
 
 /*******************************************************/
 /*************** Debugging functions *******************/

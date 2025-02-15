@@ -11,6 +11,7 @@
                 "-o",
                 "sim.exe",
                 "sim.c",
+                "processor.c",
                 "core.c",
                 "memory.c",
                 "sram.c"
