@@ -555,8 +555,8 @@ bool sw(core *cpu, instruction *instruction, cache_block *data_from_memory, bool
     uint32_t offset = address % BLOCK_SIZE;
     uint32_t tag = address / (BLOCK_SIZE * NUM_OF_BLOCKS);
     // block for the search
-    cache_block *c_block = NULL;
     bool found = search_block(cpu->cache, address);
+    cache_block *c_block = get_cache_block(cpu->cache, address);
     // cache hit
     if (found && c_block->tag == tag)
     {
