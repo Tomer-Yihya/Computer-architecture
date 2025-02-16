@@ -7,19 +7,18 @@
 #include "core.h"
 #include "processor.h"
 
-
-#define DEBUG true 
-//#define DEBUG false
-
+#define DEBUG true
+// #define DEBUG false
 
 /*******************************************************/
 /*************** Processor Functions *******************/
 /*******************************************************/
 
 // Initializes file names to the argv[] arguments
-void set_file_names(filenames* filenames, char* argv[])
+void set_file_names(filenames *filenames, char *argv[])
 {
-    if (!filenames) {
+    if (!filenames)
+    {
         printf("Error: filenames is NULL!\n");
         return;
     }
@@ -54,11 +53,11 @@ void set_file_names(filenames* filenames, char* argv[])
     filenames->stats3_str = argv[27];
 }
 
-
 // Initializes file names to the defined default values
-void set_default_file_names(filenames* filenames)
+void set_default_file_names(filenames *filenames)
 {
-    if (!filenames) {
+    if (!filenames)
+    {
         printf("Error: filenames is NULL!\n");
         return;
     }
@@ -93,8 +92,6 @@ void set_default_file_names(filenames* filenames)
     filenames->tsram3_str = "tsram3.txt";
 }
 
-
-
 /*
  * Initializes the entire processor structure.
  * - Sets pc to 0.
@@ -102,16 +99,18 @@ void set_default_file_names(filenames* filenames)
  * - Initializes each core imem and prev_imem according to to the file instructions.
  * - Initializes each core cache and prev_cache using their respective initialization function.
  */
-processor* init_processor()
-//processor* init_processor(filenames* filenames)
+processor *init_processor()
+// processor* init_processor(filenames* filenames)
 {
-    processor* cpu = malloc(sizeof(processor));
-    if (!cpu) {
+    processor *cpu = malloc(sizeof(processor));
+    if (!cpu)
+    {
         perror("Failed to allocate memory for the processor");
         exit(EXIT_FAILURE);
     }
     cpu->filenames = malloc(sizeof(filenames));
-        if (!cpu->filenames) {
+    if (!cpu->filenames)
+    {
         perror("Failed to allocate memory for filenames");
         exit(EXIT_FAILURE);
     }
@@ -121,8 +120,8 @@ processor* init_processor()
     cpu->core1 = init_core(1, cpu->filenames->imem1_str, cpu->filenames->core1trace_str, cpu->filenames->regout1_str, cpu->filenames->stats1_str, cpu->filenames->dsram1_str, cpu->filenames->tsram1_str);
     cpu->core2 = init_core(2, cpu->filenames->imem2_str, cpu->filenames->core2trace_str, cpu->filenames->regout2_str, cpu->filenames->stats2_str, cpu->filenames->dsram2_str, cpu->filenames->tsram2_str);
     cpu->core3 = init_core(3, cpu->filenames->imem3_str, cpu->filenames->core3trace_str, cpu->filenames->regout3_str, cpu->filenames->stats3_str, cpu->filenames->dsram3_str, cpu->filenames->tsram3_str);
-    if (!cpu->core0 || !cpu->core1 || !cpu->core2 || !cpu->core3
-        || !cpu->core0->cache || !cpu->core1->cache || !cpu->core2->cache || !cpu->core3->cache) {
+    if (!cpu->core0 || !cpu->core1 || !cpu->core2 || !cpu->core3 || !cpu->core0->cache || !cpu->core1->cache || !cpu->core2->cache || !cpu->core3->cache)
+    {
         perror("Failed to allocate memory for the processor cores");
         exit(EXIT_FAILURE);
     }
@@ -130,7 +129,8 @@ processor* init_processor()
     cpu->core1_instructions = create_instructions();
     cpu->core2_instructions = create_instructions();
     cpu->core3_instructions = create_instructions();
-    if (!cpu->core0_instructions || !cpu->core1_instructions || !cpu->core2_instructions || !cpu->core3_instructions) {
+    if (!cpu->core0_instructions || !cpu->core1_instructions || !cpu->core2_instructions || !cpu->core3_instructions)
+    {
         perror("Failed to allocate memory for the cores instructions");
         exit(EXIT_FAILURE);
     }
@@ -144,50 +144,78 @@ processor* init_processor()
     return cpu;
 }
 
-
 // Executes the processor run
-void run(processor* cpu, main_memory* memory)
+void run(processor *cpu, main_memory *memory)
 {
-    FILE* bustrace;
+    FILE *bustrace;
     open_file(&bustrace, cpu->filenames->bustrace_str, "w");
-    FILE* memout;
+    FILE *memout;
     open_file(&memout, cpu->filenames->memout_str, "w");
-    
+
     // blocks to transfer data
-    memory_block* mem_block = NULL;
-    cache_block* data_from_memory = NULL;
-    cache_block* data_to_memory = NULL;
-    bool to_memory = false;
-    bool from_memory = false;
+    memory_block *mem_block = NULL;
+    cache_block *data_from_memory = NULL;
+    cache_block *data_to_memory = NULL;
     bool extra_delay = false;
     uint32_t address = 0;
     uint32_t tag = 0;
-    core* temp_core = (core*)malloc(sizeof(core));
-    if (!temp_core) {
+    core *temp_core = (core *)malloc(sizeof(core));
+    if (!temp_core)
+    {
         printf("Memory allocation failed!\n");
         return;
     }
-    if(DEBUG) { print_bus_status(cpu); }
-    while(!finish(cpu)) {
+    if (DEBUG)
+    {
+        print_bus_status(cpu);
+    }
+    while (!finish(cpu))
+    {
         temp_core = NULL;
         // No core is working with the bus at the moment
-        if(!cpu->core0->hold_the_bus || !cpu->core1->hold_the_bus || !cpu->core2->hold_the_bus || !cpu->core3->hold_the_bus){
+        if (!cpu->core0->hold_the_bus || !cpu->core1->hold_the_bus || !cpu->core2->hold_the_bus || !cpu->core3->hold_the_bus)
+        {
             // Checks if one of the cores needs the bus
-            if(cpu->core0_instructions->memory->opcode == 16 || cpu->core0_instructions->memory->opcode == 17){ cpu->core0->need_the_bus = true; }
-            else { cpu->core0->need_the_bus = false; }
-            if(cpu->core1_instructions->memory->opcode == 16 || cpu->core1_instructions->memory->opcode == 17){ cpu->core1->need_the_bus = true; }
-            else { cpu->core1->need_the_bus = false; }
-            if(cpu->core2_instructions->memory->opcode == 16 || cpu->core2_instructions->memory->opcode == 17){ cpu->core2->need_the_bus = true; }
-            else { cpu->core2->need_the_bus = false; }
-            if(cpu->core3_instructions->memory->opcode == 16 || cpu->core3_instructions->memory->opcode == 17){ cpu->core3->need_the_bus = true; }
-            else { cpu->core3->need_the_bus = false; }
+            if (cpu->core0_instructions->memory->opcode == 16 || cpu->core0_instructions->memory->opcode == 17)
+            {
+                cpu->core0->need_the_bus = !search_block(cpu->core0->cache, (uint32_t)cpu->core0_instructions->memory->ALU_result);
+            }
+            else
+            {
+                cpu->core0->need_the_bus = false;
+            }
+            if (cpu->core1_instructions->memory->opcode == 16 || cpu->core1_instructions->memory->opcode == 17)
+            {
+                cpu->core1->need_the_bus = !search_block(cpu->core1->cache, (uint32_t)cpu->core1_instructions->memory->ALU_result);
+            }
+            else
+            {
+                cpu->core1->need_the_bus = false;
+            }
+            if (cpu->core2_instructions->memory->opcode == 16 || cpu->core2_instructions->memory->opcode == 17)
+            {
+                cpu->core2->need_the_bus = !search_block(cpu->core2->cache, (uint32_t)cpu->core2_instructions->memory->ALU_result);
+            }
+            else
+            {
+                cpu->core2->need_the_bus = false;
+            }
+            if (cpu->core3_instructions->memory->opcode == 16 || cpu->core3_instructions->memory->opcode == 17)
+            {
+                cpu->core3->need_the_bus = !search_block(cpu->core3->cache, (uint32_t)cpu->core3_instructions->memory->ALU_result);
+            }
+            else
+            {
+                cpu->core3->need_the_bus = false;
+            }
 
             // if at least one of the cores needs the bus
-            if(cpu->core0->need_the_bus || cpu->core1->need_the_bus || cpu->core2->need_the_bus || cpu->core3->need_the_bus){
+            if (cpu->core0->need_the_bus || cpu->core1->need_the_bus || cpu->core2->need_the_bus || cpu->core3->need_the_bus)
+            {
                 // choose who will work with the bus and update the queue
-                // core* temp = cpu->round_robin_queue[0];
                 temp_core = cpu->round_robin_queue[0];
-                if(temp_core->need_the_bus) {
+                if (temp_core->need_the_bus)
+                {
                     temp_core->hold_the_bus = true;
                     // move the core to be the last in the queue
                     cpu->round_robin_queue[0] = cpu->round_robin_queue[1];
@@ -195,93 +223,110 @@ void run(processor* cpu, main_memory* memory)
                     cpu->round_robin_queue[2] = cpu->round_robin_queue[3];
                     cpu->round_robin_queue[3] = temp_core;
                 }
-                else {
+                else
+                {
                     temp_core = cpu->round_robin_queue[1];
-                    if(temp_core->need_the_bus) {
+                    if (temp_core->need_the_bus)
+                    {
                         temp_core->hold_the_bus = true;
                         // move the core to be the last in the queue
                         cpu->round_robin_queue[1] = cpu->round_robin_queue[2];
                         cpu->round_robin_queue[2] = cpu->round_robin_queue[3];
                         cpu->round_robin_queue[3] = temp_core;
                     }
-                    else {
+                    else
+                    {
                         temp_core = cpu->round_robin_queue[2];
-                        if(temp_core->need_the_bus) {
+                        if (temp_core->need_the_bus)
+                        {
                             temp_core->hold_the_bus = true;
                             // move the core to be the last in the queue
                             cpu->round_robin_queue[2] = cpu->round_robin_queue[3];
                             cpu->round_robin_queue[3] = temp_core;
                         }
-                        else{
+                        else
+                        {
                             temp_core = cpu->round_robin_queue[3];
-                            if(temp_core->need_the_bus) {
+                            if (temp_core->need_the_bus)
+                            {
                                 temp_core->hold_the_bus = true;
-                            }    
+                            }
                         }
                     }
                 }
             }
         }
         // check uniqe modified block in caches
-        bool modified_block_exists = false;
+        tag = address / BLOCK_SIZE;
         bool about_to_be_overwritten = false;
-        int core_num = is_block_modified(cpu, address, &modified_block_exists, &about_to_be_overwritten);
-        if(!extra_delay && core_num > 0){
-            extra_delay = (modified_block_exists && about_to_be_overwritten);
-            data_to_memory = get_cache_block(cpu->core0->cache, address);
+        uint32_t address_of_overwritten = false;
+        int core_num = search_modified_block(cpu, address, &about_to_be_overwritten, &address_of_overwritten);
+        if (!extra_delay && core_num > 0)
+        {
+            extra_delay = about_to_be_overwritten;
+            if (about_to_be_overwritten)
+                switch (core_num)
+                {
+                case 1:
+                    data_to_memory = get_cache_block(cpu->core0->cache, address_of_overwritten);
+                    break;
+                case 2:
+                    data_to_memory = get_cache_block(cpu->core1->cache, address_of_overwritten);
+                    break;
+                case 3:
+                    data_to_memory = get_cache_block(cpu->core2->cache, address_of_overwritten);
+                    break;
+                case 4:
+                    data_to_memory = get_cache_block(cpu->core3->cache, address_of_overwritten);
+                    break;
+                default:
+                    break;
+                }
+
+            else
+                switch (core_num)
+                {
+                case 1:
+                    data_to_memory = get_cache_block(cpu->core0->cache, address);
+                    break;
+                case 2:
+                    data_to_memory = get_cache_block(cpu->core1->cache, address);
+                    break;
+                case 3:
+                    data_to_memory = get_cache_block(cpu->core2->cache, address);
+                    break;
+                case 4:
+                    data_to_memory = get_cache_block(cpu->core3->cache, address);
+                    break;
+                default:
+                    break;
+                }
             data_to_memory->state = EXCLUSIVE;
             mem_block = convert_cache_block_to_mem_block(data_to_memory);
-            insert_block_to_memory(memory, tag, *mem_block);
+            if (about_to_be_overwritten)
+            {
+                uint32_t tag_of_overwritten = address_of_overwritten / (BLOCK_SIZE * NUM_OF_BLOCKS);
+                insert_block_to_memory(memory, tag_of_overwritten, *mem_block);
+            }
+            else
+                insert_block_to_memory(memory, tag, *mem_block);
         }
-        // bool extra_delay = function!!!!!!!!!!!!! 
+        mem_block = get_block(memory, tag);
+        data_from_memory = convert_mem_block_to_cache_block(mem_block);
+        // bool extra_delay = function!!!!!!!!!!!!!
         // make one step in each core
         cpu->cycle++;
-        cache_block* b1 = pipeline_step(cpu->core0, cpu->core0_instructions, data_from_memory, &address, &extra_delay);
-        cache_block* b2 = pipeline_step(cpu->core1, cpu->core1_instructions, data_from_memory, &address, &extra_delay);
-        cache_block* b3 = pipeline_step(cpu->core2, cpu->core2_instructions, data_from_memory, &address, &extra_delay);
-        cache_block* b4 = pipeline_step(cpu->core3, cpu->core3_instructions, data_from_memory, &address, &extra_delay);
-        cache_block* b5 = convert_mem_block_to_cache_block(get_block(memory, address));
-        update_cache_stats(b1,b2,b3,b4,b5); 
-        if(DEBUG) { print_bus_status(cpu); }
-        
-        tag = address / (BLOCK_SIZE * NUM_OF_BLOCKS);
-        // if data_to_memory != NULL => insert block just like data_to_memory to the memory
-        if(to_memory){
-            // convert the returned cache block to a memory block
-            mem_block = convert_cache_block_to_mem_block(data_to_memory); 
-            // insert the converted block into memory
-            insert_block_to_memory(memory, tag, *mem_block);
-            to_memory = false;
+        cache_block *b1 = pipeline_step(cpu->core0, cpu->core0_instructions, data_from_memory, &address, &extra_delay);
+        cache_block *b2 = pipeline_step(cpu->core1, cpu->core1_instructions, data_from_memory, &address, &extra_delay);
+        cache_block *b3 = pipeline_step(cpu->core2, cpu->core2_instructions, data_from_memory, &address, &extra_delay);
+        cache_block *b4 = pipeline_step(cpu->core3, cpu->core3_instructions, data_from_memory, &address, &extra_delay);
+        cache_block *b5 = convert_mem_block_to_cache_block(get_block(memory, address));
+        update_cache_stats(b1, b2, b3, b4, b5);     
+        if (DEBUG)
+        {
+            print_bus_status(cpu);
         }
-        // if data_from_memory != NULL => data_from_memory = The requested block from memory
-        if(from_memory){
-            // search for the desired block in memory
-            mem_block = get_block(memory, tag);
-            if(!mem_block) {
-                continue;
-            }
-            // convert the returned memory block to a cache block, if it's the last cycle insert it to the cache
-            data_from_memory = convert_mem_block_to_cache_block(mem_block);
-            if(cpu->core0->hold_the_bus && cpu->core0_instructions->memory->block_delay == 0) { 
-                insert_block(cpu->core0->cache ,address, data_from_memory, cpu->cycle);
-            }
-            else if(cpu->core1->hold_the_bus && cpu->core1_instructions->memory->block_delay == 0) { 
-                insert_block(cpu->core1->cache ,address, data_from_memory, cpu->cycle);
-            }
-            else if(cpu->core2->hold_the_bus && cpu->core2_instructions->memory->block_delay == 0) { 
-                insert_block(cpu->core2->cache ,address, data_from_memory, cpu->cycle); 
-            }
-            else if(cpu->core3->hold_the_bus && cpu->core3_instructions->memory->block_delay == 0) { 
-                insert_block(cpu->core3->cache ,address, data_from_memory, cpu->cycle); 
-            }
-            else{
-                address = 0; 
-            }
-            printf("insert the block from the memory to core%d cache\n", temp_core->core_number); 
-            temp_core->need_the_bus = false;
-            temp_core->hold_the_bus = false;
-            from_memory = false;
-        }
+
     }
     free_core(temp_core);
     fclose(bustrace);
@@ -290,26 +335,26 @@ void run(processor* cpu, main_memory* memory)
     free_processor(cpu);
 }
 
-
 // Check if all the cores finished running
-bool finish(processor* cpu) 
+bool finish(processor *cpu)
 {
-    if(!cpu){
+    if (!cpu)
+    {
         return false;
     }
     bool b0 = (cpu->core0->done == true);
     bool b1 = (cpu->core1->done == true);
     bool b2 = (cpu->core2->done == true);
     bool b3 = (cpu->core3->done == true);
-    
+
     return (b0 && b1 && b2 && b3);
 }
 
-
 // Frees the core's memory including its cache
-void free_processor(processor* cpu)
+void free_processor(processor *cpu)
 {
-    if (!cpu) {
+    if (!cpu)
+    {
         return;
     }
     // Free instructions allocated memory
@@ -328,94 +373,205 @@ void free_processor(processor* cpu)
     free(cpu);
 }
 
-
-
-memory_block* convert_cache_block_to_mem_block(cache_block* c_block) 
+memory_block *convert_cache_block_to_mem_block(cache_block *c_block)
 {
     // without cache_block we have nothing to convert
-    if (!c_block) {
+    if (!c_block)
+    {
         return NULL;
     }
     // the memory_block is null => create one
-    memory_block* m_block = (memory_block*)malloc(sizeof(memory_block));
-    if (!m_block) {
+    memory_block *m_block = (memory_block *)malloc(sizeof(memory_block));
+    if (!m_block)
+    {
         printf("Memory allocation failed!\n");
         return NULL;
     }
     m_block->tag = c_block->tag;
     // copy the data
-    for (int i = 0; i < BLOCK_SIZE && i < CACHE_BLOCK_SIZE; i++) {
+    for (int i = 0; i < BLOCK_SIZE && i < CACHE_BLOCK_SIZE; i++)
+    {
         m_block->data[i] = c_block->data[i];
     }
     return m_block;
 }
 
-
-
-cache_block* convert_mem_block_to_cache_block(memory_block* m_block) 
+cache_block *convert_mem_block_to_cache_block(memory_block *m_block)
 {
     // without cache_block we have nothing to convert
-    if (!m_block) {
+    if (!m_block)
+    {
         return NULL;
     }
     // create cache clock
-    cache_block* c_block = (cache_block*)malloc(sizeof(cache_block));
-    if (!c_block) {
+    cache_block *c_block = (cache_block *)malloc(sizeof(cache_block));
+    if (!c_block)
+    {
         printf("Memory allocation failed!\n");
         return NULL;
     }
     c_block->tag = m_block->tag;
     c_block->state = SHARED;
     // copy the data
-    for (int i = 0; i < BLOCK_SIZE && i < CACHE_BLOCK_SIZE; i++) {
+    for (int i = 0; i < BLOCK_SIZE && i < CACHE_BLOCK_SIZE; i++)
+    {
         c_block->data[i] = m_block->data[i];
     }
     return c_block;
 }
 
-
-
-int is_block_modified(processor* cpu, uint32_t address, bool* modified_block_exists, bool* about_to_be_overwritten)
+int search_modified_block(processor *cpu, uint32_t address, bool *about_to_be_overwritten, uint32_t *address_of_overwritten)
 {
+    *about_to_be_overwritten = false;
+    *address_of_overwritten = 0;
+    if (search_block(cpu->core0->cache, address) && get_cache_block(cpu->core0->cache, address)->state == MODIFIED)
+        return 1;
+    if (search_block(cpu->core1->cache, address) && get_cache_block(cpu->core1->cache, address)->state == MODIFIED)
+        return 2;
+    if (search_block(cpu->core2->cache, address) && get_cache_block(cpu->core2->cache, address)->state == MODIFIED)
+        return 3;
+    if (search_block(cpu->core3->cache, address) && get_cache_block(cpu->core3->cache, address)->state == MODIFIED)
+        return 4;
+
+    uint32_t index = (address / CACHE_BLOCK_SIZE) % NUM_BLOCKS;
+    if (cpu->core0->hold_the_bus && cpu->core0->cache->blocks[index].state == MODIFIED)
+    {
+        *about_to_be_overwritten = true;
+        *address_of_overwritten = cpu->core0->cache->blocks[index].tag * (CACHE_BLOCK_SIZE * NUM_BLOCKS);
+        return 1;
+    }
+    if (cpu->core1->hold_the_bus && cpu->core1->cache->blocks[index].state == MODIFIED)
+    {
+        *about_to_be_overwritten = true;
+        *address_of_overwritten = cpu->core1->cache->blocks[index].tag * (CACHE_BLOCK_SIZE * NUM_BLOCKS);
+        return 2;
+    }
+    if (cpu->core2->hold_the_bus && cpu->core2->cache->blocks[index].state == MODIFIED)
+    {
+        *about_to_be_overwritten = true;
+        *address_of_overwritten = cpu->core2->cache->blocks[index].tag * (CACHE_BLOCK_SIZE * NUM_BLOCKS);
+        return 3;
+    }
+    if (cpu->core3->hold_the_bus && cpu->core3->cache->blocks[index].state == MODIFIED)
+    {
+        *about_to_be_overwritten = true;
+        *address_of_overwritten = cpu->core3->cache->blocks[index].tag * (CACHE_BLOCK_SIZE * NUM_BLOCKS);
+        return 4;
+    }
+
     return 0;
-    // to do!!!!
 }
 
-
-
-void update_cache_stats(cache_block* core0_block, cache_block* core1_block, cache_block* core2_block, cache_block* core3_block, cache_block* mem_block)
+void update_cache_stats(cache_block *core0_block, cache_block *core1_block, cache_block *core2_block, cache_block *core3_block, cache_block *mem_block)
 {
-    // to do
-}
+    
+    cache_block *latest = core0_block;
+    if (core1_block && (!latest || (core1_block->cycle > latest->cycle)))
+        latest = core1_block;
+    if (core2_block && (!latest || (core2_block->cycle > latest->cycle)))
+        latest = core2_block;
+    if (core3_block && (!latest || (core3_block->cycle > latest->cycle)))
+        latest = core3_block;
+    if (!latest)
+        return;
 
+    if (latest->state == MODIFIED)
+    {
+        if (core0_block && latest != core0_block && latest->tag == core0_block->tag)
+            core0_block->state = INVALID;
+        if (core1_block && latest != core1_block && latest->tag == core1_block->tag)
+            core1_block->state = INVALID;
+        if (core2_block && latest != core2_block && latest->tag == core2_block->tag)
+            core2_block->state = INVALID;
+        if (core3_block && latest != core3_block && latest->tag == core3_block->tag)
+            core3_block->state = INVALID;
+    }
+
+    else if (latest->state != INVALID)
+    {
+        if (core0_block && latest != core0_block && latest->tag == core0_block->tag)
+        {
+            core0_block->state = SHARED;
+            latest->state = SHARED;
+        }
+        if (core1_block && latest != core1_block && latest->tag == core1_block->tag)
+        {
+            core1_block->state = SHARED;
+            latest->state = SHARED;
+        }
+        if (core2_block && latest != core2_block && latest->tag == core2_block->tag)
+        {
+            core2_block->state = SHARED;
+            latest->state = SHARED;
+        }
+        if (core3_block && latest != core3_block && latest->tag == core3_block->tag)
+        {
+            core3_block->state = SHARED;
+            latest->state = SHARED;
+        }
+    }
+}
 
 /*******************************************************/
 /*************** Debugging functions *******************/
 /*******************************************************/
 
-void print_bus_status(processor* cpu)
+void print_bus_status(processor *cpu)
 {
-    char* core0_mem_inst = instruction_as_a_string(cpu->core0_instructions->memory);
-    char* core1_mem_inst = instruction_as_a_string(cpu->core1_instructions->memory);
-    char* core2_mem_inst = instruction_as_a_string(cpu->core2_instructions->memory);
-    char* core3_mem_inst = instruction_as_a_string(cpu->core3_instructions->memory);
-    
+    char *core0_mem_inst = instruction_as_a_string(cpu->core0_instructions->memory);
+    char *core1_mem_inst = instruction_as_a_string(cpu->core1_instructions->memory);
+    char *core2_mem_inst = instruction_as_a_string(cpu->core2_instructions->memory);
+    char *core3_mem_inst = instruction_as_a_string(cpu->core3_instructions->memory);
+
     int delay = 0;
-    core* core;
-    if(cpu->core0->hold_the_bus)      {core = cpu->core0; delay = cpu->core0_instructions->memory->block_delay + cpu->core0_instructions->memory->bus_delay; }
-    else if(cpu->core1->hold_the_bus) {core = cpu->core1; delay = cpu->core1_instructions->memory->block_delay + cpu->core1_instructions->memory->bus_delay; }
-    else if(cpu->core2->hold_the_bus) {core = cpu->core2; delay = cpu->core2_instructions->memory->block_delay + cpu->core2_instructions->memory->bus_delay; }
-    else if(cpu->core3->hold_the_bus) {core = cpu->core3; delay = cpu->core3_instructions->memory->block_delay + cpu->core3_instructions->memory->bus_delay; }
-    else { core = NULL;}
-    if(!core) {
+    core *core;
+    if (cpu->core0->hold_the_bus)
+    {
+        core = cpu->core0;
+        delay = cpu->core0_instructions->memory->block_delay + cpu->core0_instructions->memory->bus_delay;
+    }
+    else if (cpu->core1->hold_the_bus)
+    {
+        core = cpu->core1;
+        delay = cpu->core1_instructions->memory->block_delay + cpu->core1_instructions->memory->bus_delay;
+    }
+    else if (cpu->core2->hold_the_bus)
+    {
+        core = cpu->core2;
+        delay = cpu->core2_instructions->memory->block_delay + cpu->core2_instructions->memory->bus_delay;
+    }
+    else if (cpu->core3->hold_the_bus)
+    {
+        core = cpu->core3;
+        delay = cpu->core3_instructions->memory->block_delay + cpu->core3_instructions->memory->bus_delay;
+    }
+    else
+    {
+        core = NULL;
+    }
+    if (!core)
+    {
         printf("cycle %d: the bus is ready and waiting for request\n", cpu->cycle);
         return;
-    }else{
+    }
+    else
+    {
         printf("cycle %d: core%d hold the bus, left %d cycles on the bus\n", cpu->cycle, core->core_number, delay);
-        if(cpu->core0->need_the_bus && !cpu->core0->hold_the_bus) { printf("core0 is waiting for the bus, core0 mem_instructions: %s\n", core0_mem_inst); }
-        if(cpu->core1->need_the_bus && !cpu->core1->hold_the_bus) { printf("core1 is waiting for the bus, core1 mem_instructions: %s\n", core1_mem_inst); }
-        if(cpu->core2->need_the_bus && !cpu->core2->hold_the_bus) { printf("core2 is waiting for the bus, core2 mem_instructions: %s\n", core2_mem_inst); }
-        if(cpu->core3->need_the_bus && !cpu->core3->hold_the_bus) { printf("core3 is waiting for the bus, core3 mem_instructions: %s\n", core3_mem_inst); }
+        if (cpu->core0->need_the_bus && !cpu->core0->hold_the_bus)
+        {
+            printf("core0 is waiting for the bus, core0 mem_instructions: %s\n", core0_mem_inst);
+        }
+        if (cpu->core1->need_the_bus && !cpu->core1->hold_the_bus)
+        {
+            printf("core1 is waiting for the bus, core1 mem_instructions: %s\n", core1_mem_inst);
+        }
+        if (cpu->core2->need_the_bus && !cpu->core2->hold_the_bus)
+        {
+            printf("core2 is waiting for the bus, core2 mem_instructions: %s\n", core2_mem_inst);
+        }
+        if (cpu->core3->need_the_bus && !cpu->core3->hold_the_bus)
+        {
+            printf("core3 is waiting for the bus, core3 mem_instructions: %s\n", core3_mem_inst);
+        }
     }
 }
-
