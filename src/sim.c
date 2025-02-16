@@ -7,8 +7,6 @@
 #include "memory.h"
 #include "processor.h"
 
-
-
 /*
 // check the core functions
 int main() {
@@ -43,23 +41,25 @@ int main() {
 }
 */
 
-
 // check the core functions
-//int main()
-int main(int argc, char* argv[])
+// int main()
+int main(int argc, char *argv[])
 {
     // Step 1: Initialize the cpu
-    processor* cpu = init_processor();
-    if (!cpu) {
+    processor *cpu = init_processor();
+    if (!cpu)
+    {
         perror("Failed to allocate memory for the cpu");
         exit(EXIT_FAILURE);
     }
-    if (argc == 28) {
+    if (argc == 28)
+    {
         set_file_names(cpu->filenames, argv);
     }
     // Step 2: Initialize the main memory from the file "memin.txt"
-    main_memory* memory = init_main_memory(cpu->filenames->memin_str);
-    if (!memory) {
+    main_memory *memory = init_main_memory(cpu->filenames->memin_str);
+    if (!memory)
+    {
         perror("Failed to allocate memory for core");
         exit(EXIT_FAILURE);
     }
@@ -73,6 +73,3 @@ int main(int argc, char* argv[])
 
     return 0;
 }
-
-
-
