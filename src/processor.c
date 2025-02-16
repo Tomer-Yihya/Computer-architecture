@@ -464,7 +464,49 @@ int search_modified_block(processor *cpu, uint32_t address, bool *about_to_be_ov
 
 void update_cache_stats(cache_block *core0_block, cache_block *core1_block, cache_block *core2_block, cache_block *core3_block, cache_block *mem_block)
 {
-    // to do
+    cache_block *latest = core0_block;
+    if (core1_block->cycle > latest->cycle)
+        latest = core1_block;
+    if (core2_block->cycle > latest->cycle)
+        latest = core2_block;
+    if (core3_block->cycle > latest->cycle)
+        latest = core3_block;
+
+    if (latest->state == MODIFIED)
+    {
+        if (latest != core0_block && latest->tag == core0_block->tag)
+            core0_block->state = INVALID;
+        if (latest != core1_block && latest->tag == core1_block->tag)
+            core1_block->state = INVALID;
+        if (latest != core2_block && latest->tag == core2_block->tag)
+            core2_block->state = INVALID;
+        if (latest != core3_block && latest->tag == core3_block->tag)
+            core3_block->state = INVALID;
+    }
+
+    else if (latest->state != INVALID)
+    {
+        if (latest != core0_block && latest->tag == core0_block->tag)
+        {
+            core0_block->state = SHARED;
+            latest->state = SHARED;
+        }
+        if (latest != core1_block && latest->tag == core1_block->tag)
+        {
+            core1_block->state = SHARED;
+            latest->state = SHARED;
+        }
+        if (latest != core2_block && latest->tag == core2_block->tag)
+        {
+            core2_block->state = SHARED;
+            latest->state = SHARED;
+        }
+        if (latest != core3_block && latest->tag == core3_block->tag)
+        {
+            core3_block->state = SHARED;
+            latest->state = SHARED;
+        }
+    }
 }
 
 /*******************************************************/
