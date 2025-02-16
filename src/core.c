@@ -283,10 +283,6 @@ bool decode(core *cpu, instruction *instruction)
     {
         return false;
     }
-    if(instruction->opcode == 17)
-    {
-        
-    }
     int rt = instruction->rt;
     int rs = instruction->rs;
     int rd = instruction->rd;
@@ -469,6 +465,7 @@ bool lw(core *cpu, instruction *instruction, cache_block *data_from_memory, uint
     // lw: R[rd] = MEM[R[rs]+R[rt]] = MEM[ALU_result]
     // break data to address, offset and tag
     *address = (uint32_t)instruction->ALU_result;
+    ;
     uint32_t offset = *address % BLOCK_SIZE;
     // block for the search
     cache_block *c_block = NULL;
@@ -558,8 +555,8 @@ bool sw(core *cpu, instruction *instruction, cache_block *data_from_memory, bool
     uint32_t offset = address % BLOCK_SIZE;
     uint32_t tag = address / (BLOCK_SIZE * NUM_OF_BLOCKS);
     // block for the search
+    cache_block *c_block = NULL;
     bool found = search_block(cpu->cache, address);
-    cache_block *c_block = get_cache_block(cpu->cache, address);
     // cache hit
     if (found && c_block->tag == tag)
     {
@@ -571,12 +568,6 @@ bool sw(core *cpu, instruction *instruction, cache_block *data_from_memory, bool
     // Cache miss
     else
     {
-        // waiting for the whole block from the bus
-        if (instruction->extra_delay > 0)
-        {
-            instruction->extra_delay--;
-            return false;
-        }
         // waiting for the first word from the bus
         if (instruction->bus_delay > 0)
         {

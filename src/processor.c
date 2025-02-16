@@ -178,7 +178,7 @@ void run(processor *cpu, main_memory *memory)
             // Checks if one of the cores needs the bus
             if (cpu->core0_instructions->memory->opcode == 16 || cpu->core0_instructions->memory->opcode == 17)
             {
-                cpu->core0->need_the_bus = !search_block(cpu->core0->cache, (uint32_t)cpu->core0_instructions->memory->ALU_result);
+                cpu->core0->need_the_bus = true;
             }
             else
             {
@@ -186,7 +186,7 @@ void run(processor *cpu, main_memory *memory)
             }
             if (cpu->core1_instructions->memory->opcode == 16 || cpu->core1_instructions->memory->opcode == 17)
             {
-                cpu->core1->need_the_bus = !search_block(cpu->core1->cache, (uint32_t)cpu->core1_instructions->memory->ALU_result);
+                cpu->core1->need_the_bus = true;
             }
             else
             {
@@ -194,7 +194,7 @@ void run(processor *cpu, main_memory *memory)
             }
             if (cpu->core2_instructions->memory->opcode == 16 || cpu->core2_instructions->memory->opcode == 17)
             {
-                cpu->core2->need_the_bus = !search_block(cpu->core2->cache, (uint32_t)cpu->core2_instructions->memory->ALU_result);
+                cpu->core2->need_the_bus = true;
             }
             else
             {
@@ -202,7 +202,7 @@ void run(processor *cpu, main_memory *memory)
             }
             if (cpu->core3_instructions->memory->opcode == 16 || cpu->core3_instructions->memory->opcode == 17)
             {
-                cpu->core3->need_the_bus = !search_block(cpu->core3->cache, (uint32_t)cpu->core3_instructions->memory->ALU_result);
+                cpu->core3->need_the_bus = true;
             }
             else
             {
@@ -213,6 +213,7 @@ void run(processor *cpu, main_memory *memory)
             if (cpu->core0->need_the_bus || cpu->core1->need_the_bus || cpu->core2->need_the_bus || cpu->core3->need_the_bus)
             {
                 // choose who will work with the bus and update the queue
+                // core* temp = cpu->round_robin_queue[0];
                 temp_core = cpu->round_robin_queue[0];
                 if (temp_core->need_the_bus)
                 {
@@ -321,12 +322,11 @@ void run(processor *cpu, main_memory *memory)
         cache_block *b3 = pipeline_step(cpu->core2, cpu->core2_instructions, data_from_memory, &address, &extra_delay);
         cache_block *b4 = pipeline_step(cpu->core3, cpu->core3_instructions, data_from_memory, &address, &extra_delay);
         cache_block *b5 = convert_mem_block_to_cache_block(get_block(memory, address));
-        update_cache_stats(b1, b2, b3, b4, b5);     
+        update_cache_stats(b1, b2, b3, b4, b5);
         if (DEBUG)
         {
             print_bus_status(cpu);
         }
-
     }
     free_core(temp_core);
     fclose(bustrace);
