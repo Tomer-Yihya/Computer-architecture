@@ -27,6 +27,8 @@ extern char bus_delay;
 extern bool bus_read;
 extern bool bus_write;
 extern char data_source;
+extern char first_flush;
+extern bool extra_cycle;
 extern uint32_t flush_address;
 
 void update_cycle();
@@ -34,6 +36,6 @@ void set_bus(char orig_id, enum BusCmd bus_cmd, uint32_t bus_addr, uint32_t bus_
 void set_shared();
 void create_bustrace_file(processor *cpu);
 void close_bustrace_file();
-void write_line_to_bustrace_file(processor *cpu);
+void write_line_to_bustrace_file(processor *cpu, uint32_t cycle);
 
 #endif // BUS_H

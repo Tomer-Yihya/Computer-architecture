@@ -48,19 +48,16 @@ int main() {
 //int main()
 int main(int argc, char* argv[])
 {
-    // Step 1: Initialize the cpu
-    if (argc != 28)
-    {
-        printf("Invalid arguments!\n");
-        exit(EXIT_FAILURE);
-    }
     filenames *file_names = malloc(sizeof(filenames));
     if (!file_names)
     {
         perror("Failed to allocate memory for filenames");
         exit(EXIT_FAILURE);
     }
-    set_file_names(file_names, argv);
+    if (argc != 28)
+        set_default_file_names(file_names);
+    else
+        set_file_names(file_names, argv);
     processor *cpu = init_processor(file_names);
     if (!cpu)
     {

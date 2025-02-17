@@ -380,7 +380,6 @@ bool lw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint
         c_block = get_cache_block(cpu->cache, *address);
         instruction->ALU_result = c_block->data[offset];
         cpu->stats->read_hit++;
-        *address = -1;
         return true;
     }
     // Cache miss
@@ -426,7 +425,6 @@ bool lw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint
             cpu->need_the_bus = false;
             cpu->hold_the_bus = false;
             cpu->stats->read_miss++;
-            *address = -1;
             return true;
         }
     }
@@ -461,7 +459,6 @@ bool sw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint
         c_block->data[offset] = cpu->registers[instruction->rd];
         c_block->state = MODIFIED;
         cpu->stats->write_hit++;
-        *address = -1;
         return true;
     }
     // Cache miss
@@ -506,7 +503,6 @@ bool sw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint
             // release the bus
             cpu->need_the_bus = false;
             cpu->hold_the_bus = false;
-            *address = -1;
             return true;
         }
     }
@@ -542,14 +538,22 @@ void write_beck (core* cpu, instruction* instruction)
 // Calculates pipeline delays and updates instructions accordingly
 cache_block* pipeline_step(core* cpu, instructions* instructions, cache_block* data_from_memory, uint32_t* address, bool* extra_delay) 
 {
-    if(cpu->done) { return NULL; } // The core has finished executing all instructions.
-
-    cache_block* c_block = malloc(sizeof(core));
     if (!cpu) {
         perror("Failed to allocate memory for core");
         exit(EXIT_FAILURE);
     }
-    c_block = NULL;
+
+    cache_block* c_block = NULL;
+    if (*address != -1 && search_block(cpu->cache, *address))
+    {
+        c_block = get_cache_block(cpu->cache, *address);
+    }
+
+    if(cpu->done) { return c_block; } // The core has finished executing all instructions.
+
+    
+    
+    
 
     bool forward_fetch = true;
     bool forward_decode = true;
@@ -641,10 +645,6 @@ cache_block* pipeline_step(core* cpu, instructions* instructions, cache_block* d
         cpu->stats->num_of_decode_stalls = (cpu->stats->num_of_decode_stalls - (cpu->stats->num_of_mem_stalls + 4));
         cpu->done = true;
         fclose(cpu->coretrace_file);
-    }
-    if (search_block(cpu->cache, *address) && *address != -1)
-    {
-        c_block = get_cache_block(cpu->cache, *address);
     }
     return c_block;
 }
