@@ -6,8 +6,10 @@ char bus_delay = 0;
 bool bus_read = false;
 bool bus_write = false;
 char data_source = 4;
+char first_flush = 4;
 uint32_t flush_address = 0;
 static FILE *bustrace_file;
+bool extra_cycle = true;
 
 void update_cycle()
 {
@@ -40,7 +42,7 @@ void close_bustrace_file()
     fclose(bustrace_file);
 }
 
-void write_line_to_bustrace_file(processor *cpu)
+void write_line_to_bustrace_file(processor *cpu, uint32_t cycle)
 {
     if (!bustrace_file)
     {
@@ -48,7 +50,7 @@ void write_line_to_bustrace_file(processor *cpu)
         return;
     }
     // Write the clock cycle number
-    fprintf(bustrace_file, "%d ", cpu->cycle);
+    fprintf(bustrace_file, "%d ", cycle);
     fprintf(bustrace_file, "%d ", bus.orig_id);
     fprintf(bustrace_file, "%d ", bus.bus_cmd);
     fprintf(bustrace_file, "%05X ", bus.bus_addr);
