@@ -283,6 +283,10 @@ bool decode(core *cpu, instruction *instruction)
     {
         return false;
     }
+    if(instruction->opcode == 17)
+    {
+        
+    }
     int rt = instruction->rt;
     int rs = instruction->rs;
     int rd = instruction->rd;
@@ -431,12 +435,13 @@ bool mem(core *cpu, instruction *instruction, cache_block *data_from_memory, uin
         return true;
     }
     // The operation cannot be completed until the bus is received
-    else if (!cpu->hold_the_bus)
+    else if (!cpu->hold_the_bus && !search_block(cpu->cache, (uint32_t)instruction->ALU_result))
     {
         return false;
     }
+
     // lw: R[rd] = MEM[R[rs]+R[rt]]
-    else if (instruction->opcode == 16)
+    if (instruction->opcode == 16)
     {
         return lw(cpu, instruction, data_from_memory, address, extra_delay);
     }
@@ -444,7 +449,7 @@ bool mem(core *cpu, instruction *instruction, cache_block *data_from_memory, uin
     // if (instruction->opcode == 17)
     else
     {
-        return sw(cpu, instruction, data_from_memory, extra_delay);
+        return sw(cpu, instruction, data_from_memory, address, extra_delay);
     }
 }
 
@@ -465,7 +470,6 @@ bool lw(core *cpu, instruction *instruction, cache_block *data_from_memory, uint
     // lw: R[rd] = MEM[R[rs]+R[rt]] = MEM[ALU_result]
     // break data to address, offset and tag
     *address = (uint32_t)instruction->ALU_result;
-    ;
     uint32_t offset = *address % BLOCK_SIZE;
     // block for the search
     cache_block *c_block = NULL;
@@ -474,15 +478,16 @@ bool lw(core *cpu, instruction *instruction, cache_block *data_from_memory, uint
     if (found)
     { // search_block returns a pointer to the block if it exists.
         c_block = get_cache_block(cpu->cache, *address);
-        cpu->registers[instruction->ALU_result] = c_block->data[offset];
+        instruction->ALU_result = c_block->data[offset];
         cpu->stats->read_hit++;
+        *address = -1;
         return true;
     }
     // Cache miss
     else
     {
         // waiting for the whole block from the bus
-        if (instruction->extra_delay > 0)
+        if (*extra_delay && instruction->extra_delay > 0)
         {
             instruction->extra_delay--;
             return false;
@@ -500,7 +505,8 @@ bool lw(core *cpu, instruction *instruction, cache_block *data_from_memory, uint
             return false;
         }
         // finished waiting for the whole block, update the cache and move forward (return true)
-        else if (instruction->bus_delay == 0 && instruction->block_delay == 0 && instruction->extra_delay == 0)
+        // else if (instruction->bus_delay == 0 && instruction->block_delay == 0 && (!*extra_delay || instruction->extra_delay == 0))
+        else
         {
             *extra_delay = false;
             // create block to insert the cache
@@ -523,14 +529,9 @@ bool lw(core *cpu, instruction *instruction, cache_block *data_from_memory, uint
             // release the bus
             cpu->need_the_bus = false;
             cpu->hold_the_bus = false;
+            cpu->stats->read_miss++;
+            *address = -1;
             return true;
-        }
-        // Default value, the code should not get here
-        else
-        {
-            cpu->need_the_bus = false;
-            cpu->hold_the_bus = false;
-            return false;
         }
     }
 }
@@ -547,27 +548,35 @@ bool lw(core *cpu, instruction *instruction, cache_block *data_from_memory, uint
  * The function updates all the data in the first cycle the bus transmits the block
  * in the next cycles it's waits 4 cycles to simulate receiving the block in parts
  */
-bool sw(core *cpu, instruction *instruction, cache_block *data_from_memory, bool *extra_delay)
+bool sw(core *cpu, instruction *instruction, cache_block *data_from_memory, uint32_t *address, bool *extra_delay)
 {
     // sw: MEM[R[rs]+R[rt]] = R[rd]
     int data = instruction->ALU_result;
-    uint32_t address = (uint32_t)data;
-    uint32_t offset = address % BLOCK_SIZE;
-    uint32_t tag = address / (BLOCK_SIZE * NUM_OF_BLOCKS);
+    *address = (uint32_t)data;
+    uint32_t offset = *address % BLOCK_SIZE;
+    //uint32_t tag = *address / (BLOCK_SIZE * NUM_OF_BLOCKS);
     // block for the search
-    cache_block *c_block = NULL;
-    bool found = search_block(cpu->cache, address);
+    bool found = search_block(cpu->cache, *address);
+    cache_block *c_block;
     // cache hit
-    if (found && c_block->tag == tag)
+    if (found)
     {
+        c_block = get_cache_block(cpu->cache, *address);
         c_block->data[offset] = cpu->registers[instruction->rd];
         c_block->state = MODIFIED;
         cpu->stats->write_hit++;
+        *address = -1;
         return true;
     }
     // Cache miss
     else
     {
+        // waiting for the whole block from the bus
+        if (*extra_delay && instruction->extra_delay > 0)
+        {
+            instruction->extra_delay--;
+            return false;
+        }
         // waiting for the first word from the bus
         if (instruction->bus_delay > 0)
         {
@@ -581,7 +590,8 @@ bool sw(core *cpu, instruction *instruction, cache_block *data_from_memory, bool
             return false;
         }
         // finished waiting for the whole block, update the cache and move forward (return true)
-        else if (instruction->bus_delay == 0 && instruction->block_delay == 0 && instruction->extra_delay == 0)
+        //else if (instruction->bus_delay == 0 && instruction->block_delay == 0 && (!*extra_delay || instruction->extra_delay == 0))
+        else
         {
             *extra_delay = false;
             // create block to insert the cache
@@ -599,19 +609,13 @@ bool sw(core *cpu, instruction *instruction, cache_block *data_from_memory, bool
                 c_block->data[i] = data_from_memory->data[i];
             }
             c_block->data[offset] = cpu->registers[instruction->rd];
-            insert_block(cpu->cache, address, c_block, cpu->cycle); // Overwrite the old block with the new block
+            insert_block(cpu->cache, *address, c_block, cpu->cycle); // Overwrite the old block with the new block
             cpu->stats->write_miss++;                               // count the miss just one
             // release the bus
             cpu->need_the_bus = false;
             cpu->hold_the_bus = false;
+            *address = -1;
             return true;
-        }
-        // Default value, the code should not get here
-        else
-        {
-            cpu->need_the_bus = false;
-            cpu->hold_the_bus = false;
-            return false;
         }
     }
 }
@@ -627,7 +631,7 @@ void write_beck(core *cpu, instruction *instruction)
     // Do not perform an R-type (arithmetic operation) into the $ziro register.
     int opcode = instruction->opcode;
     int rd = instruction->rd;
-    if ((0 <= opcode && opcode <= 8 && (rd == 0 || rd == 1)) || opcode > 8)
+    if ((0 <= opcode && opcode <= 8 && (rd == 0 || rd == 1)) || (opcode > 8 && opcode < 16) || opcode >= 17)
     {
         return;
     }
@@ -676,13 +680,15 @@ cache_block *pipeline_step(core *cpu, instructions *instructions, cache_block *d
     int mem_rd = instructions->memory->rd;
     int wb_rd = instructions->write_back->rd;
 
-    // Data Hazard: EXE `$rd` is used as `$rs` or `$rt` or `$rd` in Decode → Insert stall
-    bool data_hazard_decode_and_exe = ((exe_rd == decode_rd || exe_rd == decode_rs || exe_rd == decode_rt) && exe_rd != 0);
-    // Data Hazard: MEM `$rd` is used as `$rs` or `$rt` or `$rd` in Decode → Insert stall
-    bool data_hazard_decode_and_mem = ((mem_rd == decode_rd || mem_rd == decode_rs || mem_rd == decode_rt) && mem_rd != 0);
-    // Data Hazard: WB isn't finish and `$rd` is used as `$rs` or `$rt` or `$rd` in Decode → Insert stall
-    bool data_hazard_decode_and_wb = ((wb_rd == decode_rd || wb_rd == decode_rs || wb_rd == decode_rt) && wb_rd != 0);
-
+    // Data Hazard: EXE $rd is used as $rs or $rt or $rd in Decode → Insert stall
+    bool data_hazard_decode_and_exe = ((exe_rd == decode_rd || exe_rd == decode_rs || exe_rd == decode_rt) && exe_rd != 0 && exe_rd != 1);
+    // Data Hazard: MEM $rd is used as $rs or $rt or $rd in Decode → Insert stall
+    bool data_hazard_decode_and_mem = ((mem_rd == decode_rd || mem_rd == decode_rs || mem_rd == decode_rt) && mem_rd != 0 && mem_rd != 1);
+    // Data Hazard: WB isn't finish and $rd is used as $rs or $rt or $rd in Decode → Insert stall
+    bool write_to_reg = (((instructions->write_back->opcode >= 0) && (instructions->write_back->opcode < 9)) || (instructions->write_back->opcode == 16));
+    bool data_hazard_decode_and_wb = (((wb_rd == decode_rd) || (wb_rd == decode_rs) || (wb_rd == decode_rt)) && write_to_reg);
+    
+    // if there is at least one data hazard
     bool data_hazard = (data_hazard_decode_and_exe || data_hazard_decode_and_mem || data_hazard_decode_and_wb);
 
     if (cpu->cycle > 1 && (instructions->decode->opcode != HALT_OPCODE) && data_hazard)
@@ -774,7 +780,7 @@ cache_block *pipeline_step(core *cpu, instructions *instructions, cache_block *d
         cpu->done = true;
         fclose(cpu->coretrace_file);
     }
-    if (search_block(cpu->cache, *address))
+    if (search_block(cpu->cache, *address) && *address != -1)
     {
         c_block = get_cache_block(cpu->cache, *address);
     }

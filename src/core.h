@@ -18,7 +18,7 @@
 #define IMEM_SIZE 1024 // 1024 lines of 32 bits
 #define HALT_OPCODE 20
 #define STALL_OPCODE 21
-#define BUS_DELAY 16  // Delay until the first word is retrieved from memory
+#define BUS_DELAY (16 + 1)  // Delay until the first word is retrieved from memory
 #define BLOCK_DELAY 4 // Delay until the entire block is received
 #define EXTRA_DELAY 4 // Delay until the entire block is received
 
@@ -180,7 +180,7 @@ bool lw(core *cpu, instruction *instruction, cache_block *data_from_memory, uint
  * The function updates all the data in the first cycle the bus transmits the block
  * in the next cycles it's waits 4 cycles to simulate receiving the block in parts
  */
-bool sw(core *cpu, instruction *instruction, cache_block *data_from_memory, bool *extra_delay);
+bool sw(core *cpu, instruction *instruction, cache_block *data_from_memory, uint32_t *address, bool *extra_delay);
 
 // Performing the WB phase
 void write_beck(core *cpu, instruction *instruction);

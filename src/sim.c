@@ -46,15 +46,23 @@ int main() {
 int main(int argc, char *argv[])
 {
     // Step 1: Initialize the cpu
-    processor *cpu = init_processor();
+    if (argc != 28)
+    {
+        printf("Invalid arguments!\n");
+        exit(EXIT_FAILURE);
+    }
+    filenames *file_names = malloc(sizeof(filenames));
+    if (!file_names)
+    {
+        perror("Failed to allocate memory for filenames");
+        exit(EXIT_FAILURE);
+    }
+    set_file_names(file_names, argv);
+    processor *cpu = init_processor(file_names);
     if (!cpu)
     {
         perror("Failed to allocate memory for the cpu");
         exit(EXIT_FAILURE);
-    }
-    if (argc == 28)
-    {
-        set_file_names(cpu->filenames, argv);
     }
     // Step 2: Initialize the main memory from the file "memin.txt"
     main_memory *memory = init_main_memory(cpu->filenames->memin_str);
@@ -70,6 +78,7 @@ int main(int argc, char *argv[])
     // Step 4: free memory
     free_main_memory(memory);
     free_processor(cpu);
+    free(file_names);
 
     return 0;
 }
