@@ -1,7 +1,8 @@
 CC = gcc
-CFLAGS = -g -Wall
+CFLAGS = -g -Wall -I src
 EXEC = sim.exe
-SRCS = sim.c processor.c core.c memory.c sram.c
+SRC_DIR = src
+SRCS = $(SRC_DIR)/sim.c $(SRC_DIR)/processor.c $(SRC_DIR)/core.c $(SRC_DIR)/memory.c $(SRC_DIR)/sram.c $(SRC_DIR)/bus.c
 TRACE_FILES = core0trace.txt core1trace.txt core2trace.txt core3trace.txt
 REGOUT_FILES = regout0.txt regout1.txt regout2.txt regout3.txt
 STATS_FILES = stats0.txt stats1.txt stats2.txt stats3.txt

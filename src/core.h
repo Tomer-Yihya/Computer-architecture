@@ -20,13 +20,9 @@
 #define IMEM_SIZE 1024   // 1024 lines of 32 bits
 #define HALT_OPCODE 20
 #define STALL_OPCODE 21
-#define BUS_DELAY 16  // Delay until the first word is retrieved from memory
+#define BUS_DELAY 17  // Delay until the first word is retrieved from memory (16 + 1)
 #define BLOCK_DELAY 4 // Delay until the entire block is received
 #define EXTRA_DELAY 4 // Delay until the entire block from the cache moves to memory
-
-/*********************** Debug *************************/
-
-#define CORE_DEBUG true // print the coretrace of each step
 
 
 /*******************************************************/
