@@ -12,67 +12,77 @@
 /*******************************************************/
 
 // Converts a hexadecimal string to an integer and returns the integer value.
-int string_to_int(char* str) {
+int string_to_int(char* str) 
+{
     return (int)strtol(str, NULL, 16); // Convert hex string to int
 }
 
 // Initializes the main_memory array in the core structure from the file "memin.txt".
 // If the file has fewer lines than MAIN_MEMORY_SIZE, the remaining values are set to 0.
-main_memory* init_main_memory(char* filename) {
-    
-    // Initialize all blocks and their data to 0
+main_memory* init_main_memory(char* filename) 
+{
+    // Allocate memory for the main memory structure
     main_memory* mem = malloc(sizeof(main_memory));
     if (!mem) {
         perror("Failed to allocate memory for main memory");
         exit(EXIT_FAILURE);
     }
+    // Initialize all blocks
     for (int i = 0; i < NUM_OF_BLOCKS; i++) {
-        mem->blocks[i].tag = i; // Set the tag for each block based on its index
+        mem->blocks[i].tag = 0;  // Ensure tag starts at 0
         for (int j = 0; j < BLOCK_SIZE; j++) {
-            mem->blocks[i].data[j] = 0; // Initialize data to 0
+            mem->blocks[i].data[j] = 0;
         }
     }
+    // Open memory input file
     FILE* file = fopen(filename, "r");
-    if (file == NULL) {
+    if (!file) {
         perror("Error opening file");
+        free(mem);
         return NULL;
     }
     char line[20];
     int line_number = 0;
+    int block_index = 0;
+    int block_offset = 0;
     while (fgets(line, sizeof(line), file) != NULL) {
-        // Remove newline character if present
         line[strcspn(line, "\n")] = '\0';
-
-        // Skip empty lines
-        if (strlen(line) == 0) {
+        if (strlen(line) == 0) { 
             line_number++;
             continue;
         }
-        // Convert the line from hex to int
         uint32_t value = (uint32_t)strtol(line, NULL, 16);
-        // Determine block index and offset within the block
-        int block_index = line_number / BLOCK_SIZE;
-        int block_offset = line_number % BLOCK_SIZE;
-        // Store value in the appropriate block and offset
+        block_index = line_number / BLOCK_SIZE;
+        block_offset = line_number % BLOCK_SIZE;
         if (block_index < NUM_OF_BLOCKS) {
-            mem->blocks[block_index].data[block_offset] = (int)(value & 0xFFFFF); // Mask to 20 bits
+            mem->blocks[block_index].data[block_offset] = value;
+            mem->blocks[block_index].tag = (line_number / BLOCK_SIZE) & 0xFFF;
         }
         line_number++;
-        // Stop if all blocks are filled
-        if (block_index >= NUM_OF_BLOCKS) {
-            break;
+    }
+    while (line_number < MAIN_MEMORY_SIZE) {
+        block_index = line_number / BLOCK_SIZE;
+        block_offset = line_number % BLOCK_SIZE;
+        if (block_index < NUM_OF_BLOCKS) {
+            mem->blocks[block_index].data[block_offset] = 0;
+            mem->blocks[block_index].tag = (line_number / BLOCK_SIZE) & 0xFFF;
         }
+        line_number++;
     }
     fclose(file);
     return mem;
 }
+
+
+
 
 /*
 Returns a copy of the block from the memory array.
 Adjusts to memory boundaries so that there is no overflow.
 If the array is not initialized, an empty block is returned.
 */
-memory_block* get_block(main_memory* mem, int tag) {
+memory_block* get_block(main_memory* mem, int tag) 
+{
     if (!mem) {
         printf("Error: Memory is not initialized.\n");
         return NULL;
@@ -96,7 +106,8 @@ memory_block* get_block(main_memory* mem, int tag) {
 }
 
 // Writes a word (int) to a specific address in memory (at the appropriate location in the block)
-void write_word_to_block(main_memory* mem, uint32_t address, int word) {
+void write_word_to_block(main_memory* mem, uint32_t address, int word) 
+{
     if (!mem) {
         printf("Error: Memory pointer is NULL in write_word_to_block.\n");
         return;
@@ -134,8 +145,8 @@ void insert_block_to_memory(main_memory* mem, int tag, memory_block new_block)
 }
 
 
-
-void free_main_memory(main_memory* memory) {
+void free_main_memory(main_memory* memory) 
+{
     if (!memory) {
         return;
     }
@@ -143,6 +154,42 @@ void free_main_memory(main_memory* memory) {
     free(memory);
 }
 
+
+/*******************************************************/
+/*************** Create output files *******************/
+/*******************************************************/
+
+void create_memout_file(main_memory* mem, char* filename)
+{
+    FILE* file = fopen(filename, "w");
+    if (!file || !mem) {
+        perror("Error opening memout file or Memory structure is NULL");
+        return;
+    }
+    // Find the last nonzero element in memory
+    int last_nonzero_index = 0;
+    for (int i = 0; i < NUM_OF_BLOCKS; i++) {
+        for (int j = 0; j < BLOCK_SIZE; j++) {
+            if (mem->blocks[i].data[j] != 0) {
+                last_nonzero_index = i * BLOCK_SIZE + j; // Store absolute index of last nonzero element
+            }
+        }
+    }
+    // Print memory contents up to the last nonzero element
+    int current_index = 0;
+    for (int i = 0; i < NUM_OF_BLOCKS; i++) {
+        for (int j = 0; j < BLOCK_SIZE; j++) {
+            // Ensure we are within valid memory bounds
+            fprintf(file, "%08X\n", mem->blocks[i].data[j]);
+            if (current_index == last_nonzero_index) {
+                fclose(file);
+                return;
+            }
+            current_index++;
+        }
+    }
+    fclose(file);
+}
 
 
 /*******************************************************/

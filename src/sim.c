@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
         perror("Failed to allocate memory for core");
         exit(EXIT_FAILURE);
     }
-
+    
     // Step 3: Run the cpu
     run(cpu, memory);
 

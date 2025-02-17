@@ -8,8 +8,8 @@
 #include "processor.h"
 #include "bus.h"
 
-#define DEBUG true 
-//#define DEBUG false
+//#define DEBUG true 
+#define DEBUG false
 
 
 /*******************************************************/
@@ -408,22 +408,19 @@ void run(processor* cpu, main_memory* memory)
             data_source = 4;
         }
 
-        if (DEBUG)
-        {
+        if (DEBUG) {
             print_bus_status(cpu);
+            // print_core_trace_hex(cpu->core2, cpu->core2_instructions);
         }
-        // print_core_trace_hex(cpu->core2, cpu->core2_instructions);
     }
-    free_core(temp_core);
+    create_memout_file(memory, cpu->filenames->memout_str);
     close_bustrace_file();
-    fclose(memout);
     create_output_files(cpu->core0);
     create_output_files(cpu->core1);
     create_output_files(cpu->core2);
     create_output_files(cpu->core3);
-    print_cache(cpu->core2->cache);
-    //print_all_cache(cpu->core2->cache);
     // Ensure to free allocated memory at the end of the function
+    free_core(temp_core);
     free_processor(cpu);
 }
 

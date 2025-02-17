@@ -14,8 +14,8 @@
 
 #define BLOCK_SIZE 4            // 4 words in block
 //#define MAIN_MEMORY_SIZE 262144 // 2^18 (2^20/4) lines of 4 words block <= to big for prints
-#define MAIN_MEMORY_SIZE 256    // 256 lines of 4 words block
-#define NUM_OF_BLOCKS (MAIN_MEMORY_SIZE / BLOCK_SIZE) // number of blocks - 64 (2^20/4 = 262144)
+#define MAIN_MEMORY_SIZE 16384
+#define NUM_OF_BLOCKS 4096 // number of blocks = 2^20/4 = 262,144
 
 /*******************************************************/
 /************** Main Memory Structs ********************/
@@ -58,6 +58,13 @@ void insert_block_to_memory(main_memory* mem, int tag, memory_block new_block);
 
 
 void free_main_memory(main_memory* memory);
+
+
+/*******************************************************/
+/*************** Create output files *******************/
+/*******************************************************/
+
+void create_memout_file(main_memory* mem, char* filename);
 
 
 /*******************************************************/
