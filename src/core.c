@@ -444,7 +444,7 @@ bool lw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint
  * The function updates all the data in the first cycle the bus transmits the block
  * in the next cycles it's waits 4 cycles to simulate receiving the block in parts
  */
-bool sw(core* cpu, instruction* instruction, cache_block* data_from_memory, bool* extra_delay)
+bool sw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint32_t* address, bool* extra_delay)
 {
     // sw: MEM[R[rs]+R[rt]] = R[rd]
     int data = instruction->ALU_result;
@@ -673,7 +673,6 @@ void free_core(core* cpu)
         free_cache(cpu->cache);
     }
     // Free the stats struct
-    if(cpu->stats){
     if (cpu->stats)
     {
         free(cpu->stats);
