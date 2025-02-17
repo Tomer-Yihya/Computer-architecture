@@ -64,7 +64,7 @@ cache_block *get_cache_block(Cache *cache, uint32_t address)
     {
         c_block->data[i] = block.data[i];
     }
-    return c_block;
+    return &cache->blocks[index];
 }
 
 /*

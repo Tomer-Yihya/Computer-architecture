@@ -87,7 +87,7 @@ void set_default_file_names(filenames *filenames);
  * - Initializes each core imem and prev_imem according to to the file instructions.
  * - Initializes each core cache and prev_cache using their respective initialization function.
  */
-processor *init_processor();
+processor *init_processor(filenames *filenames);
 
 // Executes the processor run
 void run(processor *cpu, main_memory *memory);
@@ -102,7 +102,7 @@ memory_block *convert_cache_block_to_mem_block(cache_block *c_block);
 
 cache_block *convert_mem_block_to_cache_block(memory_block *m_block);
 
-int search_modified_block(processor *cpu, uint32_t address, bool *about_to_be_overwritten, uint32_t *address_of_overwritten);
+int search_modified_block(processor *cpu, uint32_t address, bool *about_to_be_overwritten, uint32_t *address_of_overwritten, uint32_t *core_of_overwritten);
 
 void update_cache_stats(cache_block *core0_block, cache_block *core1_block, cache_block *core2_block, cache_block *core3_block, cache_block *mem_block);
 
