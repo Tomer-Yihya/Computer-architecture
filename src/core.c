@@ -444,7 +444,7 @@ bool lw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint
  * The function updates all the data in the first cycle the bus transmits the block
  * in the next cycles it's waits 4 cycles to simulate receiving the block in parts
  */
-bool sw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint32_t* address, bool* extra_delay)
+bool sw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint32_t *address, bool* extra_delay)
 {
     // sw: MEM[R[rs]+R[rt]] = R[rd]
     int data = instruction->ALU_result;
@@ -564,12 +564,13 @@ cache_block* pipeline_step(core* cpu, instructions* instructions, cache_block* d
     int mem_rd = instructions->memory->rd;
     int wb_rd = instructions->write_back->rd;
 
-    // Data Hazard: EXE `$rd` is used as `$rs` or `$rt` or `$rd` in Decode → Insert stall
-    bool data_hazard_decode_and_exe = ((exe_rd == decode_rd ||exe_rd == decode_rs || exe_rd == decode_rt) && exe_rd != 0);
-    // Data Hazard: MEM `$rd` is used as `$rs` or `$rt` or `$rd` in Decode → Insert stall
-    bool data_hazard_decode_and_mem = ((mem_rd == decode_rd || mem_rd == decode_rs || mem_rd == decode_rt) && mem_rd != 0);
-    // Data Hazard: WB isn't finish and `$rd` is used as `$rs` or `$rt` or `$rd` in Decode → Insert stall
-    bool data_hazard_decode_and_wb = ((wb_rd == decode_rd || wb_rd == decode_rs || wb_rd == decode_rt) && wb_rd != 0);
+    // Data Hazard: EXE $rd is used as $rs or $rt or $rd in Decode → Insert stall
+    bool data_hazard_decode_and_exe = ((exe_rd == decode_rd || exe_rd == decode_rs || exe_rd == decode_rt) && exe_rd != 0 && exe_rd != 1);
+    // Data Hazard: MEM $rd is used as $rs or $rt or $rd in Decode → Insert stall
+    bool data_hazard_decode_and_mem = ((mem_rd == decode_rd || mem_rd == decode_rs || mem_rd == decode_rt) && mem_rd != 0 && mem_rd != 1);
+    // Data Hazard: WB isn't finish and $rd is used as $rs or $rt or $rd in Decode → Insert stall
+    bool write_to_reg = (((instructions->write_back->opcode >= 0) && (instructions->write_back->opcode < 9)) || (instructions->write_back->opcode == 16));
+    bool data_hazard_decode_and_wb = (((wb_rd == decode_rd) || (wb_rd == decode_rs) || (wb_rd == decode_rt)) && write_to_reg);
     
     // if there is at least one data hazard
     bool data_hazard = (data_hazard_decode_and_exe || data_hazard_decode_and_mem || data_hazard_decode_and_wb);
@@ -673,8 +674,7 @@ void free_core(core* cpu)
         free_cache(cpu->cache);
     }
     // Free the stats struct
-    if (cpu->stats)
-    {
+    if (cpu->stats) {
         free(cpu->stats);
     }
     // Free the core itself
