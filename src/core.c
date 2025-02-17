@@ -835,13 +835,15 @@ void create_tsram_file(core* cpu)
     FILE* file = NULL;
     open_file(&file, cpu->tsram_filename, "w");
     for (int i = 0; i < NUM_BLOCKS; i++) {
-        uint32_t tag = cpu->cache->blocks[i].tag;
-        MESI_state state = cpu->cache->blocks[i].state;
-        uint32_t tsram_entry = (tag << 2) | state; // Tag is 12 bits, state is 2 bits
+        uint32_t tag = cpu->cache->blocks[i].tag & 0xFFF; // Tag 12 bits
+        MESI_state state = cpu->cache->blocks[i].state & 0x3; // MESI state 2 bits
+        uint32_t tsram_entry = (state << 12) | tag; // MESI 12-13 MSB, Tag 0-11 LSB
+
         fprintf(file, "%08X\n", tsram_entry);
     }
     fclose(file);
 }
+
 
 // Opens a single file and returns an error if not opened.
 void open_file(FILE** f, char* filename, char* c)
