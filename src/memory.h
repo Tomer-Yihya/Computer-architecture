@@ -12,10 +12,9 @@
 /************* Main Memory sizes setting ***************/
 /*******************************************************/
 
-#define BLOCK_SIZE 4            // 4 words in block
-//#define MAIN_MEMORY_SIZE 262144 // 2^18 (2^20/4) lines of 4 words block <= to big for prints
-#define MAIN_MEMORY_SIZE 16384
-#define NUM_OF_BLOCKS 4096 // number of blocks = 2^20/4 = 262,144
+#define BLOCK_SIZE 4            // number of words in block = 4 
+#define MAIN_MEMORY_SIZE 262144 // number of words = 2^20/4 = 2^18 262,144
+#define NUM_OF_BLOCKS 65536     // number of blocks = 2^20/4 = 262,144/4 = 65,536
 
 /*******************************************************/
 /************** Main Memory Structs ********************/

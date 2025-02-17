@@ -73,13 +73,6 @@ bool insert_block(Cache *cache, uint32_t address, cache_block *new_block, int cy
 
 
 /*
-* The function copies the content of one SRAM (source) to another (destination).
-* All blocks, tags, states, and data are copied.
-*/
-void copy_cache(Cache *source, Cache *destination);
-
-
-/*
  * The function updates the MESI state of a block in the cache if it exists.
  * If the block is found, updates its state and true, if not found, returns false.
  */
@@ -98,23 +91,6 @@ void print_all_cache(Cache *cache);
 
 // Prints only the valid blocks of the cache (blocks with MESI state not INVALID).
 void print_cache(Cache *cache);
-
-
-
-/*******************************************************/
-/**************** cashe functions **********************/
-/*******************************************************/
-void cache_initialization(Cache *cache);
-
-bool search_block(Cache *cache, uint32_t address);
-
-cache_block* get_cache_block(Cache *cache, uint32_t address);
-
-bool insert_block(Cache *cache, uint32_t address, cache_block *new_block, int cycle);
-
-bool update_state(Cache *cache, uint32_t address, MESI_state new_state);
-
-void free_cache(Cache* cache);
 
 
 

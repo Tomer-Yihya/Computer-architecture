@@ -12,7 +12,7 @@
 /*********************** Debug *************************/
 
 #define CORE_DEBUG false // print the coretrace of each step
-#define CORE_NUM 2      // the core we are debugging
+#define CORE_NUM 2       // the core we are debugging
 
 /*******************************************************/
 /*************** Assembler Functions *******************/
