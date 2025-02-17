@@ -443,7 +443,6 @@ void run(processor* cpu, main_memory* memory)
             first_flush = 4;
             data_source = 4;
         }
-        print_core_trace_hex(cpu->core2, cpu->core2_instructions);
 
         if (DEBUG) {
             print_bus_status(cpu);
