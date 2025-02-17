@@ -390,6 +390,8 @@ void run(processor* cpu, main_memory* memory)
     create_output_files(cpu->core1);
     create_output_files(cpu->core2);
     create_output_files(cpu->core3);
+    print_cache(cpu->core2->cache);
+    //print_all_cache(cpu->core2->cache);
     // Ensure to free allocated memory at the end of the function
     free_processor(cpu);
 }

@@ -77,7 +77,6 @@ int main(int argc, char* argv[])
 
     // Step 4: free memory
     free_main_memory(memory);
-    free(file_names);
 
     return 0;
 }
