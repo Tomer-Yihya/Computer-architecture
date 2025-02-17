@@ -72,8 +72,7 @@ cache_block* get_cache_block(Cache *cache, uint32_t address)
  */
 bool insert_block(Cache *cache, uint32_t address, cache_block *new_block, int cycle) {
     uint32_t index = (address / CACHE_BLOCK_SIZE) % NUM_BLOCKS; // extracting the index
-    uint32_t tag = address / (CACHE_BLOCK_SIZE * NUM_BLOCKS);   // extracting the index
-
+    
     // Check if the index is within bounds
     if (index >= NUM_BLOCKS) {
         return false;; // Failure: index out of bounds
