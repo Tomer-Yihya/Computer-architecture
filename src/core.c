@@ -6,6 +6,7 @@
 #include "sram.h"
 #include "core.h"
 #include "memory.h"
+#include "bus.h"
 
 
 /*********************** Debug *************************/
@@ -377,6 +378,7 @@ bool lw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint
     // lw: R[rd] = MEM[R[rs]+R[rt]] = MEM[ALU_result]
     // break data to address, offset and tag
     *address = (uint32_t)instruction->ALU_result;
+    address_done = false;
     uint32_t offset = *address % BLOCK_SIZE;
     // block for the search
     cache_block* c_block = NULL;
@@ -386,6 +388,7 @@ bool lw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint
         c_block = get_cache_block(cpu->cache, *address);
         instruction->ALU_result = c_block->data[offset];
         cpu->stats->read_hit++;
+        address_done = true;
         return true;
     }
     // Cache miss
@@ -431,6 +434,7 @@ bool lw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint
             cpu->need_the_bus = false;
             cpu->hold_the_bus = false;
             cpu->stats->read_miss++;
+            address_done = true;
             return true;
         }
     }
@@ -452,6 +456,7 @@ bool sw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint
 {
     // sw: MEM[R[rs]+R[rt]] = R[rd]
     int data = instruction->ALU_result;
+    address_done = false;
     *address = (uint32_t)data;
     uint32_t offset = *address % BLOCK_SIZE;
     //uint32_t tag = *address / (BLOCK_SIZE * NUM_OF_BLOCKS);
@@ -465,6 +470,7 @@ bool sw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint
         c_block->data[offset] = cpu->registers[instruction->rd];
         c_block->state = MODIFIED;
         cpu->stats->write_hit++;
+        address_done = true;
         return true;
     }
     // Cache miss
@@ -509,6 +515,7 @@ bool sw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint
             // release the bus
             cpu->need_the_bus = false;
             cpu->hold_the_bus = false;
+            address_done = true;
             return true;
         }
     }

@@ -8,8 +8,8 @@
 #include "processor.h"
 #include "bus.h"
 
-//#define DEBUG true 
-#define DEBUG false
+#define DEBUG true 
+//#define DEBUG false
 
 
 /*******************************************************/
@@ -94,6 +94,7 @@ void set_default_file_names(filenames* filenames)
 }
 
 
+
 /*
  * Initializes the entire processor structure.
  * - Sets pc to 0.
@@ -102,6 +103,7 @@ void set_default_file_names(filenames* filenames)
  * - Initializes each core cache and prev_cache using their respective initialization function.
  */
 processor* init_processor(filenames* filenames)
+//processor* init_processor(filenames* filenames)
 {
     processor* cpu = malloc(sizeof(processor));
     if (!cpu) {
@@ -150,7 +152,7 @@ void run(processor* cpu, main_memory* memory)
     cache_block *data_from_memory = NULL;
     cache_block *data_to_memory = NULL;
     bool extra_delay = false;
-    uint32_t address = -1;
+    uint32_t address = 0;
     uint32_t tag = 0;
     core* temp_core = (core*)malloc(sizeof(core));
     if (!temp_core) {
@@ -246,6 +248,7 @@ void run(processor* cpu, main_memory* memory)
         if (about_to_be_overwritten)
         {
             first_flush = core_of_overwritten;
+            flush_address = address_of_overwritten;
             switch (core_of_overwritten)
             {
             case 0:
@@ -271,7 +274,6 @@ void run(processor* cpu, main_memory* memory)
         if (!extra_delay && core_num > 0)
         {
             data_source = core_num - 1;
-            flush_address = address_of_overwritten;
             extra_delay = about_to_be_overwritten;
 
             switch (core_num)
@@ -358,7 +360,7 @@ void run(processor* cpu, main_memory* memory)
                 {
                     set_shared();
                 }
-                write_line_to_bustrace_file(cpu, cpu->cycle - 2 + i);
+                write_line_to_bustrace_file(cpu, cpu->cycle - 3 + i);
             }
             first_flush = 4;
             data_source = 4;
@@ -372,7 +374,7 @@ void run(processor* cpu, main_memory* memory)
                 {
                     set_shared();
                 }
-                write_line_to_bustrace_file(cpu, cpu->cycle - 2 + i);
+                write_line_to_bustrace_file(cpu, cpu->cycle - 3 + i);
             }
             first_flush = 4;
             data_source = 4;
@@ -386,7 +388,7 @@ void run(processor* cpu, main_memory* memory)
                 {
                     set_shared();
                 }
-                write_line_to_bustrace_file(cpu, cpu->cycle - 2 + i);
+                write_line_to_bustrace_file(cpu, cpu->cycle - 3 + i);
             }
             first_flush = 4;
             data_source = 4;
@@ -400,7 +402,7 @@ void run(processor* cpu, main_memory* memory)
                 {
                     set_shared();
                 }
-                write_line_to_bustrace_file(cpu, cpu->cycle - 2 + i);
+                write_line_to_bustrace_file(cpu, cpu->cycle - 3 + i);
             }
             first_flush = 4;
             data_source = 4;
@@ -510,7 +512,7 @@ cache_block* convert_mem_block_to_cache_block(memory_block* m_block)
 
 int search_modified_block(processor *cpu, uint32_t address, bool *about_to_be_overwritten, uint32_t *address_of_overwritten, uint32_t *core_of_overwritten)
 {
-    if (address == -1)
+    if (address_done)
     {
         return 0;
     }

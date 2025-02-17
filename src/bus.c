@@ -3,13 +3,12 @@
 Bus bus;
 bool bus_busy = false;
 char bus_delay = 0;
-bool bus_read = false;
-bool bus_write = false;
 char data_source = 4;
 char first_flush = 4;
 uint32_t flush_address = 0;
 static FILE *bustrace_file;
 bool extra_cycle = true;
+bool address_done = false;
 
 void update_cycle()
 {
@@ -55,5 +54,5 @@ void write_line_to_bustrace_file(processor *cpu, uint32_t cycle)
     fprintf(bustrace_file, "%d ", bus.bus_cmd);
     fprintf(bustrace_file, "%05X ", bus.bus_addr);
     fprintf(bustrace_file, "%08X ", bus.bus_data);
-    fprintf(bustrace_file, "%d \n", bus.bus_shared);
+    fprintf(bustrace_file, "%d\n", bus.bus_shared);
 }

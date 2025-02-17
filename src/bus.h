@@ -30,6 +30,7 @@ extern char data_source;
 extern char first_flush;
 extern bool extra_cycle;
 extern uint32_t flush_address;
+extern bool address_done;
 
 void update_cycle();
 void set_bus(char orig_id, enum BusCmd bus_cmd, uint32_t bus_addr, uint32_t bus_data);
