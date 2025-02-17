@@ -240,7 +240,7 @@ void run(processor* cpu, main_memory* memory)
             }
         }
         // check uniqe modified block in caches
-        tag = address / (BLOCK_SIZE * NUM_OF_BLOCKS);
+        tag = address / BLOCK_SIZE;
         bool about_to_be_overwritten = false;
         uint32_t address_of_overwritten = 0;
         uint32_t core_of_overwritten = 0;
@@ -443,6 +443,7 @@ void run(processor* cpu, main_memory* memory)
             first_flush = 4;
             data_source = 4;
         }
+        print_core_trace_hex(cpu->core2, cpu->core2_instructions);
 
         if (DEBUG) {
             print_bus_status(cpu);

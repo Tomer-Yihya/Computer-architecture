@@ -72,11 +72,6 @@ cache_block* get_cache_block(Cache *cache, uint32_t address);
 bool insert_block(Cache *cache, uint32_t address, cache_block *new_block, int cycle);
 
 
-/*
-* The function copies the content of one SRAM (source) to another (destination).
-* All blocks, tags, states, and data are copied.
-*/
-void copy_cache(Cache *source, Cache *destination);
 
 
 /*

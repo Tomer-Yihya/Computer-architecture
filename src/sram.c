@@ -32,7 +32,7 @@ void cache_initialization(Cache *cache)
 // The function looks for the block in the cache, if it is found it returns true and otherwise it returns false.
 bool search_block(Cache *cache, uint32_t address) {
     uint32_t index = (address / CACHE_BLOCK_SIZE) % NUM_BLOCKS; // extracting the index
-    uint32_t tag = address / (CACHE_BLOCK_SIZE * NUM_BLOCKS);   // extracting the tag
+    uint32_t tag = address / CACHE_BLOCK_SIZE & 0xfff;   // extracting the tag
     // uint32_t offset = address % CACHE_BLOCK_SIZE;            // extracting the offset
     
     // get the block from the cache
