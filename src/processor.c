@@ -8,18 +8,18 @@
 #include "processor.h"
 #include "bus.h"
 
-#define DEBUG false
-// #define DEBUG false
+#define DEBUG true 
+//#define DEBUG false
+
 
 /*******************************************************/
 /*************** Processor Functions *******************/
 /*******************************************************/
 
 // Initializes file names to the argv[] arguments
-void set_file_names(filenames *filenames, char *argv[])
+void set_file_names(filenames* filenames, char* argv[])
 {
-    if (!filenames)
-    {
+    if (!filenames) {
         printf("Error: filenames is NULL!\n");
         return;
     }
@@ -54,11 +54,11 @@ void set_file_names(filenames *filenames, char *argv[])
     filenames->stats3_str = argv[27];
 }
 
+
 // Initializes file names to the defined default values
-void set_default_file_names(filenames *filenames)
+void set_default_file_names(filenames* filenames)
 {
-    if (!filenames)
-    {
+    if (!filenames) {
         printf("Error: filenames is NULL!\n");
         return;
     }
@@ -93,6 +93,8 @@ void set_default_file_names(filenames *filenames)
     filenames->tsram3_str = "tsram3.txt";
 }
 
+
+
 /*
  * Initializes the entire processor structure.
  * - Sets pc to 0.
@@ -100,12 +102,11 @@ void set_default_file_names(filenames *filenames)
  * - Initializes each core imem and prev_imem according to to the file instructions.
  * - Initializes each core cache and prev_cache using their respective initialization function.
  */
-processor *init_processor(filenames *filenames)
-// processor* init_processor(filenames* filenames)
+processor* init_processor(filenames* filenames)
+//processor* init_processor(filenames* filenames)
 {
-    processor *cpu = malloc(sizeof(processor));
-    if (!cpu)
-    {
+    processor* cpu = malloc(sizeof(processor));
+    if (!cpu) {
         perror("Failed to allocate memory for the processor");
         exit(EXIT_FAILURE);
     }
@@ -115,8 +116,8 @@ processor *init_processor(filenames *filenames)
     cpu->core1 = init_core(1, cpu->filenames->imem1_str, cpu->filenames->core1trace_str, cpu->filenames->regout1_str, cpu->filenames->stats1_str, cpu->filenames->dsram1_str, cpu->filenames->tsram1_str);
     cpu->core2 = init_core(2, cpu->filenames->imem2_str, cpu->filenames->core2trace_str, cpu->filenames->regout2_str, cpu->filenames->stats2_str, cpu->filenames->dsram2_str, cpu->filenames->tsram2_str);
     cpu->core3 = init_core(3, cpu->filenames->imem3_str, cpu->filenames->core3trace_str, cpu->filenames->regout3_str, cpu->filenames->stats3_str, cpu->filenames->dsram3_str, cpu->filenames->tsram3_str);
-    if (!cpu->core0 || !cpu->core1 || !cpu->core2 || !cpu->core3 || !cpu->core0->cache || !cpu->core1->cache || !cpu->core2->cache || !cpu->core3->cache)
-    {
+    if (!cpu->core0 || !cpu->core1 || !cpu->core2 || !cpu->core3
+        || !cpu->core0->cache || !cpu->core1->cache || !cpu->core2->cache || !cpu->core3->cache) {
         perror("Failed to allocate memory for the processor cores");
         exit(EXIT_FAILURE);
     }
@@ -124,8 +125,7 @@ processor *init_processor(filenames *filenames)
     cpu->core1_instructions = create_instructions();
     cpu->core2_instructions = create_instructions();
     cpu->core3_instructions = create_instructions();
-    if (!cpu->core0_instructions || !cpu->core1_instructions || !cpu->core2_instructions || !cpu->core3_instructions)
-    {
+    if (!cpu->core0_instructions || !cpu->core1_instructions || !cpu->core2_instructions || !cpu->core3_instructions) {
         perror("Failed to allocate memory for the cores instructions");
         exit(EXIT_FAILURE);
     }
@@ -139,8 +139,9 @@ processor *init_processor(filenames *filenames)
     return cpu;
 }
 
+
 // Executes the processor run
-void run(processor *cpu, main_memory *memory)
+void run(processor* cpu, main_memory* memory)
 {
     create_bustrace_file(cpu);
     FILE *memout;
@@ -153,18 +154,13 @@ void run(processor *cpu, main_memory *memory)
     bool extra_delay = false;
     uint32_t address = -1;
     uint32_t tag = 0;
-    core *temp_core = (core *)malloc(sizeof(core));
-    if (!temp_core)
-    {
+    core* temp_core = (core*)malloc(sizeof(core));
+    if (!temp_core) {
         printf("Memory allocation failed!\n");
         return;
     }
-    if (DEBUG)
-    {
-        print_bus_status(cpu);
-    }
-    while (!finish(cpu))
-    {
+    if(DEBUG) { print_bus_status(cpu); }
+    while(!finish(cpu)) {
         temp_core = NULL;
         // No core is working with the bus at the moment
         if (!cpu->core0->hold_the_bus && !cpu->core1->hold_the_bus && !cpu->core2->hold_the_bus && !cpu->core3->hold_the_bus)
@@ -204,13 +200,11 @@ void run(processor *cpu, main_memory *memory)
             }
 
             // if at least one of the cores needs the bus
-            if (cpu->core0->need_the_bus || cpu->core1->need_the_bus || cpu->core2->need_the_bus || cpu->core3->need_the_bus)
-            {
+            if(cpu->core0->need_the_bus || cpu->core1->need_the_bus || cpu->core2->need_the_bus || cpu->core3->need_the_bus){
                 // choose who will work with the bus and update the queue
                 // core* temp = cpu->round_robin_queue[0];
                 temp_core = cpu->round_robin_queue[0];
-                if (temp_core->need_the_bus)
-                {
+                if(temp_core->need_the_bus) {
                     temp_core->hold_the_bus = true;
                     // move the core to be the last in the queue
                     cpu->round_robin_queue[0] = cpu->round_robin_queue[1];
@@ -218,32 +212,26 @@ void run(processor *cpu, main_memory *memory)
                     cpu->round_robin_queue[2] = cpu->round_robin_queue[3];
                     cpu->round_robin_queue[3] = temp_core;
                 }
-                else
-                {
+                else {
                     temp_core = cpu->round_robin_queue[1];
-                    if (temp_core->need_the_bus)
-                    {
+                    if(temp_core->need_the_bus) {
                         temp_core->hold_the_bus = true;
                         // move the core to be the last in the queue
                         cpu->round_robin_queue[1] = cpu->round_robin_queue[2];
                         cpu->round_robin_queue[2] = cpu->round_robin_queue[3];
                         cpu->round_robin_queue[3] = temp_core;
                     }
-                    else
-                    {
+                    else {
                         temp_core = cpu->round_robin_queue[2];
-                        if (temp_core->need_the_bus)
-                        {
+                        if(temp_core->need_the_bus) {
                             temp_core->hold_the_bus = true;
                             // move the core to be the last in the queue
                             cpu->round_robin_queue[2] = cpu->round_robin_queue[3];
                             cpu->round_robin_queue[3] = temp_core;
                         }
-                        else
-                        {
+                        else{
                             temp_core = cpu->round_robin_queue[3];
-                            if (temp_core->need_the_bus)
-                            {
+                            if(temp_core->need_the_bus) {
                                 temp_core->hold_the_bus = true;
                             }
                         }
@@ -404,11 +392,11 @@ void run(processor *cpu, main_memory *memory)
     free_processor(cpu);
 }
 
+
 // Check if all the cores finished running
-bool finish(processor *cpu)
+bool finish(processor* cpu) 
 {
-    if (!cpu)
-    {
+    if(!cpu){
         return false;
     }
     bool b0 = (cpu->core0->done == true);
@@ -419,11 +407,11 @@ bool finish(processor *cpu)
     return (b0 && b1 && b2 && b3);
 }
 
+
 // Frees the core's memory including its cache
-void free_processor(processor *cpu)
+void free_processor(processor* cpu)
 {
-    if (!cpu)
-    {
+    if (!cpu) {
         return;
     }
     // Free instructions allocated memory
@@ -436,52 +424,52 @@ void free_processor(processor *cpu)
     free_core(cpu->core1);
     free_core(cpu->core2);
     free_core(cpu->core3);
+    // Free the filenames struct
+    free(cpu->filenames);
     // Free the processor itself
     free(cpu);
 }
 
-memory_block *convert_cache_block_to_mem_block(cache_block *c_block)
+
+
+memory_block* convert_cache_block_to_mem_block(cache_block* c_block) 
 {
     // without cache_block we have nothing to convert
-    if (!c_block)
-    {
+    if (!c_block) {
         return NULL;
     }
     // the memory_block is null => create one
-    memory_block *m_block = (memory_block *)malloc(sizeof(memory_block));
-    if (!m_block)
-    {
+    memory_block* m_block = (memory_block*)malloc(sizeof(memory_block));
+    if (!m_block) {
         printf("Memory allocation failed!\n");
         return NULL;
     }
     m_block->tag = c_block->tag;
     // copy the data
-    for (int i = 0; i < BLOCK_SIZE && i < CACHE_BLOCK_SIZE; i++)
-    {
+    for (int i = 0; i < BLOCK_SIZE && i < CACHE_BLOCK_SIZE; i++) {
         m_block->data[i] = c_block->data[i];
     }
     return m_block;
 }
 
-cache_block *convert_mem_block_to_cache_block(memory_block *m_block)
+
+
+cache_block* convert_mem_block_to_cache_block(memory_block* m_block) 
 {
     // without cache_block we have nothing to convert
-    if (!m_block)
-    {
+    if (!m_block) {
         return NULL;
     }
     // create cache clock
-    cache_block *c_block = (cache_block *)malloc(sizeof(cache_block));
-    if (!c_block)
-    {
+    cache_block* c_block = (cache_block*)malloc(sizeof(cache_block));
+    if (!c_block) {
         printf("Memory allocation failed!\n");
         return NULL;
     }
     c_block->tag = m_block->tag;
     c_block->state = SHARED;
     // copy the data
-    for (int i = 0; i < BLOCK_SIZE && i < CACHE_BLOCK_SIZE; i++)
-    {
+    for (int i = 0; i < BLOCK_SIZE && i < CACHE_BLOCK_SIZE; i++) {
         c_block->data[i] = m_block->data[i];
     }
     return c_block;
@@ -587,62 +575,28 @@ void update_cache_stats(cache_block *core0_block, cache_block *core1_block, cach
 /*************** Debugging functions *******************/
 /*******************************************************/
 
-void print_bus_status(processor *cpu)
+void print_bus_status(processor* cpu)
 {
-    char *core0_mem_inst = instruction_as_a_string(cpu->core0_instructions->memory);
-    char *core1_mem_inst = instruction_as_a_string(cpu->core1_instructions->memory);
-    char *core2_mem_inst = instruction_as_a_string(cpu->core2_instructions->memory);
-    char *core3_mem_inst = instruction_as_a_string(cpu->core3_instructions->memory);
+    char* core0_mem_inst = get_instruction_as_a_string(cpu->core0_instructions->memory);
+    char* core1_mem_inst = get_instruction_as_a_string(cpu->core1_instructions->memory);
+    char* core2_mem_inst = get_instruction_as_a_string(cpu->core2_instructions->memory);
+    char* core3_mem_inst = get_instruction_as_a_string(cpu->core3_instructions->memory);
 
     int delay = 0;
-    core *core;
-    if (cpu->core0->hold_the_bus)
-    {
-        core = cpu->core0;
-        delay = cpu->core0_instructions->memory->block_delay + cpu->core0_instructions->memory->bus_delay;
-    }
-    else if (cpu->core1->hold_the_bus)
-    {
-        core = cpu->core1;
-        delay = cpu->core1_instructions->memory->block_delay + cpu->core1_instructions->memory->bus_delay;
-    }
-    else if (cpu->core2->hold_the_bus)
-    {
-        core = cpu->core2;
-        delay = cpu->core2_instructions->memory->block_delay + cpu->core2_instructions->memory->bus_delay;
-    }
-    else if (cpu->core3->hold_the_bus)
-    {
-        core = cpu->core3;
-        delay = cpu->core3_instructions->memory->block_delay + cpu->core3_instructions->memory->bus_delay;
-    }
-    else
-    {
-        core = NULL;
-    }
-    if (!core)
-    {
+    core* core;
+    if(cpu->core0->hold_the_bus)      {core = cpu->core0; delay = cpu->core0_instructions->memory->block_delay + cpu->core0_instructions->memory->bus_delay; }
+    else if(cpu->core1->hold_the_bus) {core = cpu->core1; delay = cpu->core1_instructions->memory->block_delay + cpu->core1_instructions->memory->bus_delay; }
+    else if(cpu->core2->hold_the_bus) {core = cpu->core2; delay = cpu->core2_instructions->memory->block_delay + cpu->core2_instructions->memory->bus_delay; }
+    else if(cpu->core3->hold_the_bus) {core = cpu->core3; delay = cpu->core3_instructions->memory->block_delay + cpu->core3_instructions->memory->bus_delay; }
+    else { core = NULL;}
+    if(!core) {
         printf("cycle %d: the bus is ready and waiting for request\n", cpu->cycle);
         return;
-    }
-    else
-    {
+    }else{
         printf("cycle %d: core%d hold the bus, left %d cycles on the bus\n", cpu->cycle, core->core_number, delay);
-        if (cpu->core0->need_the_bus && !cpu->core0->hold_the_bus)
-        {
-            printf("core0 is waiting for the bus, core0 mem_instructions: %s\n", core0_mem_inst);
-        }
-        if (cpu->core1->need_the_bus && !cpu->core1->hold_the_bus)
-        {
-            printf("core1 is waiting for the bus, core1 mem_instructions: %s\n", core1_mem_inst);
-        }
-        if (cpu->core2->need_the_bus && !cpu->core2->hold_the_bus)
-        {
-            printf("core2 is waiting for the bus, core2 mem_instructions: %s\n", core2_mem_inst);
-        }
-        if (cpu->core3->need_the_bus && !cpu->core3->hold_the_bus)
-        {
-            printf("core3 is waiting for the bus, core3 mem_instructions: %s\n", core3_mem_inst);
-        }
+        if(cpu->core0->need_the_bus && !cpu->core0->hold_the_bus) { printf("core0 is waiting for the bus, core0 mem_instructions: %s\n", core0_mem_inst); }
+        if(cpu->core1->need_the_bus && !cpu->core1->hold_the_bus) { printf("core1 is waiting for the bus, core1 mem_instructions: %s\n", core1_mem_inst); }
+        if(cpu->core2->need_the_bus && !cpu->core2->hold_the_bus) { printf("core2 is waiting for the bus, core2 mem_instructions: %s\n", core2_mem_inst); }
+        if(cpu->core3->need_the_bus && !cpu->core3->hold_the_bus) { printf("core3 is waiting for the bus, core3 mem_instructions: %s\n", core3_mem_inst); }
     }
 }
