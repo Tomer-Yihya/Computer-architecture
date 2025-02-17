@@ -8,8 +8,8 @@
 #include "processor.h"
 #include "bus.h"
 
-#define DEBUG true 
-//#define DEBUG false
+//#define DEBUG true 
+#define DEBUG false
 
 
 /*******************************************************/
@@ -94,7 +94,6 @@ void set_default_file_names(filenames* filenames)
 }
 
 
-
 /*
  * Initializes the entire processor structure.
  * - Sets pc to 0.
@@ -103,7 +102,6 @@ void set_default_file_names(filenames* filenames)
  * - Initializes each core cache and prev_cache using their respective initialization function.
  */
 processor* init_processor(filenames* filenames)
-//processor* init_processor(filenames* filenames)
 {
     processor* cpu = malloc(sizeof(processor));
     if (!cpu) {
@@ -417,6 +415,10 @@ void run(processor* cpu, main_memory* memory)
     free_core(temp_core);
     close_bustrace_file();
     fclose(memout);
+    create_output_files(cpu->core0);
+    create_output_files(cpu->core1);
+    create_output_files(cpu->core2);
+    create_output_files(cpu->core3);
     // Ensure to free allocated memory at the end of the function
     free_processor(cpu);
 }

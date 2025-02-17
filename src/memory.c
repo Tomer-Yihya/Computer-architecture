@@ -139,10 +139,6 @@ void free_main_memory(main_memory* memory) {
     if (!memory) {
         return;
     }
-    // free each block
-    for (int i = 0; i < NUM_OF_BLOCKS; i++) {
-        free(memory->blocks[i].data);
-    }
     // Free the main memory itself
     free(memory);
 }
