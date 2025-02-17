@@ -240,7 +240,7 @@ void run(processor* cpu, main_memory* memory)
             }
         }
         // check uniqe modified block in caches
-        tag = address / BLOCK_SIZE;
+        tag = address / (BLOCK_SIZE * NUM_OF_BLOCKS);
         bool about_to_be_overwritten = false;
         uint32_t address_of_overwritten = 0;
         uint32_t core_of_overwritten = 0;
@@ -304,9 +304,45 @@ void run(processor* cpu, main_memory* memory)
         // make one step in each core
         cpu->cycle++;
         cache_block *b1 = pipeline_step(cpu->core0, cpu->core0_instructions, data_from_memory, &address, &extra_delay);
+        if (search_block(cpu->core0->cache, address) && get_cache_block(cpu->core0->cache, address)->state == INVALID)
+        {
+            if (search_block(cpu->core1->cache, address))
+                get_cache_block(cpu->core1->cache, address)->state = INVALID;
+            if (search_block(cpu->core2->cache, address))
+                get_cache_block(cpu->core2->cache, address)->state = INVALID;
+            if (search_block(cpu->core3->cache, address))
+                get_cache_block(cpu->core3->cache, address)->state = INVALID;
+        }
         cache_block *b2 = pipeline_step(cpu->core1, cpu->core1_instructions, data_from_memory, &address, &extra_delay);
+        if (search_block(cpu->core1->cache, address) && get_cache_block(cpu->core1->cache, address)->state == INVALID)
+        {
+            if (search_block(cpu->core0->cache, address))
+                get_cache_block(cpu->core0->cache, address)->state = INVALID;
+            if (search_block(cpu->core2->cache, address))
+                get_cache_block(cpu->core2->cache, address)->state = INVALID;
+            if (search_block(cpu->core3->cache, address))
+                get_cache_block(cpu->core3->cache, address)->state = INVALID;
+        }
         cache_block *b3 = pipeline_step(cpu->core2, cpu->core2_instructions, data_from_memory, &address, &extra_delay);
+        if (search_block(cpu->core2->cache, address) && get_cache_block(cpu->core2->cache, address)->state == INVALID)
+        {
+            if (search_block(cpu->core0->cache, address))
+                get_cache_block(cpu->core0->cache, address)->state = INVALID;
+            if (search_block(cpu->core1->cache, address))
+                get_cache_block(cpu->core1->cache, address)->state = INVALID;
+            if (search_block(cpu->core3->cache, address))
+                get_cache_block(cpu->core3->cache, address)->state = INVALID;
+        }
         cache_block *b4 = pipeline_step(cpu->core3, cpu->core3_instructions, data_from_memory, &address, &extra_delay);
+        if (search_block(cpu->core3->cache, address) && get_cache_block(cpu->core3->cache, address)->state == INVALID)
+        {
+            if (search_block(cpu->core0->cache, address))
+                get_cache_block(cpu->core0->cache, address)->state = INVALID;
+            if (search_block(cpu->core1->cache, address))
+                get_cache_block(cpu->core1->cache, address)->state = INVALID;
+            if (search_block(cpu->core2->cache, address))
+                get_cache_block(cpu->core2->cache, address)->state = INVALID;
+        }
         update_cache_stats(b1, b2, b3, b4, NULL);
 
         if (cpu->core0->hold_the_bus && extra_delay && cpu->core0_instructions->memory->extra_delay != 0)
@@ -541,13 +577,13 @@ int search_modified_block(processor *cpu, uint32_t address, bool *about_to_be_ov
         *address_of_overwritten = cpu->core3->cache->blocks[index].tag * (CACHE_BLOCK_SIZE * NUM_BLOCKS);
     }
 
-    if (search_block(cpu->core0->cache, address) && get_cache_block(cpu->core0->cache, address)->state == MODIFIED)
+    if (!cpu->core0->hold_the_bus && search_block(cpu->core0->cache, address) && get_cache_block(cpu->core0->cache, address)->state == MODIFIED)
         return 1;
-    if (search_block(cpu->core1->cache, address) && get_cache_block(cpu->core1->cache, address)->state == MODIFIED)
+    if (!cpu->core1->hold_the_bus && search_block(cpu->core1->cache, address) && get_cache_block(cpu->core1->cache, address)->state == MODIFIED)
         return 2;
-    if (search_block(cpu->core2->cache, address) && get_cache_block(cpu->core2->cache, address)->state == MODIFIED)
+    if (!cpu->core2->hold_the_bus && search_block(cpu->core2->cache, address) && get_cache_block(cpu->core2->cache, address)->state == MODIFIED)
         return 3;
-    if (search_block(cpu->core3->cache, address) && get_cache_block(cpu->core3->cache, address)->state == MODIFIED)
+    if (!cpu->core3->hold_the_bus && search_block(cpu->core3->cache, address) && get_cache_block(cpu->core3->cache, address)->state == MODIFIED)
         return 4;
 
     return 0;

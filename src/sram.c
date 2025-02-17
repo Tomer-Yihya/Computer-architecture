@@ -78,7 +78,6 @@ bool insert_block(Cache *cache, uint32_t address, cache_block *new_block, int cy
     if (index >= NUM_BLOCKS) {
         return false;; // Failure: index out of bounds
     }
-    new_block->tag = tag; // Update the block's tag
     new_block->cycle = cycle;
     cache->blocks[index] = *new_block;
 
