@@ -377,15 +377,15 @@ bool lw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint
 {
     // lw: R[rd] = MEM[R[rs]+R[rt]] = MEM[ALU_result]
     // break data to address, offset and tag
-    *address = (uint32_t)instruction->ALU_result;
+    uint32_t data = (uint32_t)instruction->ALU_result;
     address_done = false;
-    uint32_t offset = *address % BLOCK_SIZE;
+    uint32_t offset = data % BLOCK_SIZE;
     // block for the search
     cache_block* c_block = NULL;
-    bool found = search_block(cpu->cache, *address);
+    bool found = search_block(cpu->cache, data);
     // Cache hit
     if (found) { // search_block returns a pointer to the block if it exists.
-        c_block = get_cache_block(cpu->cache, *address);
+        c_block = get_cache_block(cpu->cache, data);
         instruction->ALU_result = c_block->data[offset];
         cpu->stats->read_hit++;
         address_done = true;
@@ -394,6 +394,7 @@ bool lw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint
     // Cache miss
     else
     {
+        *address = data;
         // waiting for the whole block from the bus
         if (*extra_delay && instruction->extra_delay > 0)
         {
@@ -457,16 +458,15 @@ bool sw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint
     // sw: MEM[R[rs]+R[rt]] = R[rd]
     int data = instruction->ALU_result;
     address_done = false;
-    *address = (uint32_t)data;
-    uint32_t offset = *address % BLOCK_SIZE;
+    uint32_t offset = data % BLOCK_SIZE;
     //uint32_t tag = *address / (BLOCK_SIZE * NUM_OF_BLOCKS);
     // block for the search
-    bool found = search_block(cpu->cache, *address);
+    bool found = search_block(cpu->cache, data);
     cache_block *c_block;
     // cache hit
     if (found)
     {
-        c_block = get_cache_block(cpu->cache, *address);
+        c_block = get_cache_block(cpu->cache, data);
         c_block->data[offset] = cpu->registers[instruction->rd];
         c_block->state = MODIFIED;
         cpu->stats->write_hit++;
@@ -476,6 +476,7 @@ bool sw(core* cpu, instruction* instruction, cache_block* data_from_memory, uint
     // Cache miss
     else
     {
+        *address = (uint32_t)data;
         // waiting for the whole block from the bus
         if (*extra_delay && instruction->extra_delay > 0)
         {
