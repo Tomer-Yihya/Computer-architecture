@@ -1,20 +1,12 @@
 #include "bus.h"
 
 Bus bus;
-bool bus_busy = false;
-char bus_delay = 0;
 char data_source = 4;
 char first_flush = 4;
 uint32_t flush_address = 0;
 static FILE *bustrace_file;
-bool extra_cycle = true;
 bool address_done = false;
 
-void update_cycle()
-{
-    if (bus_delay > 0)
-        bus_delay--;
-}
 
 void set_bus(char orig_id, enum BusCmd bus_cmd, uint32_t bus_addr, uint32_t bus_data)
 {

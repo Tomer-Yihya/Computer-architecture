@@ -22,17 +22,11 @@ typedef struct
 } Bus;
 
 extern Bus bus;
-extern bool bus_busy;
-extern char bus_delay;
-extern bool bus_read;
-extern bool bus_write;
 extern char data_source;
 extern char first_flush;
-extern bool extra_cycle;
 extern uint32_t flush_address;
 extern bool address_done;
 
-void update_cycle();
 void set_bus(char orig_id, enum BusCmd bus_cmd, uint32_t bus_addr, uint32_t bus_data);
 void set_shared();
 void create_bustrace_file(processor *cpu);
