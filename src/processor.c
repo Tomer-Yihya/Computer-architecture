@@ -268,7 +268,7 @@ void run(processor* cpu, main_memory* memory)
             }
             data_to_memory->state = EXCLUSIVE;
             mem_block = convert_cache_block_to_mem_block(data_to_memory);
-            uint32_t tag_of_overwritten = address_of_overwritten / (BLOCK_SIZE * NUM_OF_BLOCKS);
+            uint32_t tag_of_overwritten = address_of_overwritten / BLOCK_SIZE;
             insert_block_to_memory(memory, tag_of_overwritten, *mem_block);
         }
         if (!extra_delay && core_num > 0)
@@ -556,25 +556,25 @@ int search_modified_block(processor *cpu, uint32_t address, bool *about_to_be_ov
     {
         *about_to_be_overwritten = true;
         *core_of_overwritten = 0;
-        *address_of_overwritten = cpu->core0->cache->blocks[index].tag * (CACHE_BLOCK_SIZE * NUM_BLOCKS);
+        *address_of_overwritten =  (cpu->core0->cache->blocks[index].tag << 2) | (index * CACHE_BLOCK_SIZE);
     }
     if (cpu->core1->hold_the_bus && cpu->core1->cache->blocks[index].state == MODIFIED)
     {
         *about_to_be_overwritten = true;
         *core_of_overwritten = 1;
-        *address_of_overwritten = cpu->core1->cache->blocks[index].tag * (CACHE_BLOCK_SIZE * NUM_BLOCKS);
+        *address_of_overwritten = (cpu->core1->cache->blocks[index].tag << 2) | (index * CACHE_BLOCK_SIZE);
     }
     if (cpu->core2->hold_the_bus && cpu->core2->cache->blocks[index].state == MODIFIED)
     {
         *about_to_be_overwritten = true;
         *core_of_overwritten = 2;
-        *address_of_overwritten = cpu->core2->cache->blocks[index].tag * (CACHE_BLOCK_SIZE * NUM_BLOCKS);
+        *address_of_overwritten = (cpu->core2->cache->blocks[index].tag << 2) | (index * CACHE_BLOCK_SIZE);
     }
     if (cpu->core3->hold_the_bus && cpu->core3->cache->blocks[index].state == MODIFIED)
     {
         *about_to_be_overwritten = true;
         *core_of_overwritten = 3;
-        *address_of_overwritten = cpu->core3->cache->blocks[index].tag * (CACHE_BLOCK_SIZE * NUM_BLOCKS);
+        *address_of_overwritten = (cpu->core3->cache->blocks[index].tag << 2) | (index * CACHE_BLOCK_SIZE);
     }
 
     if (!cpu->core0->hold_the_bus && search_block(cpu->core0->cache, address) && get_cache_block(cpu->core0->cache, address)->state == MODIFIED)

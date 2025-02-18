@@ -96,22 +96,5 @@ void print_cache(Cache *cache);
 
 
 
-/*******************************************************/
-/**************** cashe functions **********************/
-/*******************************************************/
-void cache_initialization(Cache *cache);
-
-bool search_block(Cache *cache, uint32_t address);
-
-cache_block* get_cache_block(Cache *cache, uint32_t address);
-
-bool insert_block(Cache *cache, uint32_t address, cache_block *new_block, int cycle);
-
-bool update_state(Cache *cache, uint32_t address, MESI_state new_state);
-
-void free_cache(Cache* cache);
-
-
-
 
 #endif // SRAM_H
