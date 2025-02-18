@@ -244,6 +244,7 @@ void run(processor* cpu, main_memory* memory)
         {
             first_flush = core_of_overwritten;
             flush_address = address_of_overwritten;
+            extra_delay = true;
             switch (core_of_overwritten)
             {
             case 0:
@@ -268,7 +269,6 @@ void run(processor* cpu, main_memory* memory)
         if (!extra_delay && core_num > 0)
         {
             data_source = core_num - 1;
-            extra_delay = about_to_be_overwritten;
 
             switch (core_num)
             {
@@ -338,48 +338,73 @@ void run(processor* cpu, main_memory* memory)
         }
         update_cache_stats(b1, b2, b3, b4, NULL);
 
-        if (cpu->core0->hold_the_bus && extra_delay && cpu->core0_instructions->memory->extra_delay != 0)
+        if (cpu->core0->hold_the_bus && cpu->core0_instructions->memory->extra_delay == EXTRA_DELAY - 1)
         {
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 4 - cpu->core0_instructions->memory->extra_delay, get_block(memory, address)->data[4 - cpu->core0_instructions->memory->extra_delay]);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 0, get_block(memory, flush_address)->data[0]);
+            write_line_to_bustrace_file(cpu, cpu->cycle - 1);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 1, get_block(memory, flush_address)->data[1]);
+            write_line_to_bustrace_file(cpu, cpu->cycle + 0);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 2, get_block(memory, flush_address)->data[2]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 1);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 3, get_block(memory, flush_address)->data[3]);
+            write_line_to_bustrace_file(cpu, cpu->cycle + 2);
         }
-        else if (cpu->core1->hold_the_bus && extra_delay && cpu->core1_instructions->memory->extra_delay != 0)
+        else if (cpu->core1->hold_the_bus && cpu->core1_instructions->memory->extra_delay == EXTRA_DELAY - 1)
         {
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 4 - cpu->core1_instructions->memory->extra_delay, get_block(memory, address)->data[4 - cpu->core1_instructions->memory->extra_delay]);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 0, get_block(memory, flush_address)->data[0]);
+            write_line_to_bustrace_file(cpu, cpu->cycle - 1);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 1, get_block(memory, flush_address)->data[1]);
+            write_line_to_bustrace_file(cpu, cpu->cycle + 0);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 2, get_block(memory, flush_address)->data[2]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 1);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 3, get_block(memory, flush_address)->data[3]);
+            write_line_to_bustrace_file(cpu, cpu->cycle + 2);
         }
-        else if (cpu->core2->hold_the_bus && extra_delay && cpu->core2_instructions->memory->extra_delay != 0)
+        else if (cpu->core2->hold_the_bus && cpu->core2_instructions->memory->extra_delay == EXTRA_DELAY - 1)
         {
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 4 - cpu->core2_instructions->memory->extra_delay, get_block(memory, address)->data[4 - cpu->core2_instructions->memory->extra_delay]);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 0, get_block(memory, flush_address)->data[0]);
+            write_line_to_bustrace_file(cpu, cpu->cycle - 1);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 1, get_block(memory, flush_address)->data[1]);
+            write_line_to_bustrace_file(cpu, cpu->cycle + 0);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 2, get_block(memory, flush_address)->data[2]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 1);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 3, get_block(memory, flush_address)->data[3]);
+            write_line_to_bustrace_file(cpu, cpu->cycle + 2);
         }
-        else if (cpu->core3->hold_the_bus && extra_delay && cpu->core3_instructions->memory->extra_delay != 0)
+        else if (cpu->core3->hold_the_bus && cpu->core3_instructions->memory->extra_delay == EXTRA_DELAY - 1)
         {
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 4 - cpu->core3_instructions->memory->extra_delay, get_block(memory, address)->data[4 - cpu->core3_instructions->memory->extra_delay]);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 0, get_block(memory, flush_address)->data[0]);
+            write_line_to_bustrace_file(cpu, cpu->cycle - 1);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 1, get_block(memory, flush_address)->data[1]);
+            write_line_to_bustrace_file(cpu, cpu->cycle + 0);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 2, get_block(memory, flush_address)->data[2]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 1);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 3, get_block(memory, flush_address)->data[3]);
+            write_line_to_bustrace_file(cpu, cpu->cycle + 2);
         }
 
-        else if ((temp_core && temp_core == cpu->core0) || (extra_delay && cpu->core0_instructions->memory->bus_delay == BUS_DELAY))
+        else if (cpu->core0->hold_the_bus && cpu->core0_instructions->memory->bus_delay == BUS_DELAY - 2)
         {
             set_bus(0, cpu->core0_instructions->memory->opcode == 16 ? BusRd : BusRdX, address, 0);
-            write_line_to_bustrace_file(cpu, cpu->cycle + 1);
+            write_line_to_bustrace_file(cpu, cpu->cycle - 1);
         }
-        else if ((temp_core && temp_core == cpu->core1) || (extra_delay && cpu->core1_instructions->memory->bus_delay == BUS_DELAY))
+        else if (cpu->core1->hold_the_bus && cpu->core1_instructions->memory->bus_delay == BUS_DELAY - 2)
         {
             set_bus(1, cpu->core1_instructions->memory->opcode == 16 ? BusRd : BusRdX, address, 0);
-            write_line_to_bustrace_file(cpu, cpu->cycle + 1);
+            write_line_to_bustrace_file(cpu, cpu->cycle - 1);
         }
-        else if ((temp_core && temp_core == cpu->core2) || (extra_delay && cpu->core2_instructions->memory->bus_delay == BUS_DELAY))
+        else if (cpu->core2->hold_the_bus && cpu->core2_instructions->memory->bus_delay == BUS_DELAY - 2)
         {
             set_bus(2, cpu->core2_instructions->memory->opcode == 16 ? BusRd : BusRdX, address, 0);
-            write_line_to_bustrace_file(cpu, cpu->cycle + 1);
+            write_line_to_bustrace_file(cpu, cpu->cycle - 1);
         }
-        else if ((temp_core && temp_core == cpu->core3) || (extra_delay && cpu->core3_instructions->memory->bus_delay == BUS_DELAY))
+        else if (cpu->core3->hold_the_bus && cpu->core3_instructions->memory->bus_delay == BUS_DELAY - 2)
         {
             set_bus(3, cpu->core3_instructions->memory->opcode == 16 ? BusRd : BusRdX, address, 0);
-            write_line_to_bustrace_file(cpu, cpu->cycle + 1);
+            write_line_to_bustrace_file(cpu, cpu->cycle - 1);
         }
-        else if (cpu->core0->hold_the_bus && cpu->core0_instructions->memory->bus_delay == 0 && cpu->core0_instructions->memory->block_delay == 0)
+
+        else if (cpu->core0->hold_the_bus && cpu->core0_instructions->memory->block_delay == 0)
         {
             for (int i = 0; i < 4; i++)
             {
@@ -393,7 +418,7 @@ void run(processor* cpu, main_memory* memory)
             first_flush = 4;
             data_source = 4;
         }
-        else if (cpu->core1->hold_the_bus && cpu->core1_instructions->memory->bus_delay == 0 && cpu->core1_instructions->memory->block_delay == 0)
+        else if (cpu->core1->hold_the_bus && cpu->core1_instructions->memory->block_delay == 0)
         {
             for (int i = 0; i < 4; i++)
             {
@@ -407,7 +432,7 @@ void run(processor* cpu, main_memory* memory)
             first_flush = 4;
             data_source = 4;
         }
-        else if (cpu->core2->hold_the_bus && cpu->core2_instructions->memory->bus_delay == 0 && cpu->core2_instructions->memory->block_delay == 0)
+        else if (cpu->core2->hold_the_bus && cpu->core2_instructions->memory->block_delay == 0)
         {
             for (int i = 0; i < 4; i++)
             {
@@ -421,7 +446,7 @@ void run(processor* cpu, main_memory* memory)
             first_flush = 4;
             data_source = 4;
         }
-        else if (cpu->core3->hold_the_bus && cpu->core3_instructions->memory->bus_delay == 0 && cpu->core3_instructions->memory->block_delay == 0)
+        else if (cpu->core3->hold_the_bus && cpu->core3_instructions->memory->block_delay == 0)
         {
             for (int i = 0; i < 4; i++)
             {
@@ -437,7 +462,7 @@ void run(processor* cpu, main_memory* memory)
         }
 
         if (DEBUG) {
-            print_core_trace_hex(cpu->core2, cpu->core2_instructions);
+            print_bus_status(cpu);
         }
     }
     create_memout_file(memory, cpu->filenames->memout_str);
@@ -535,7 +560,10 @@ cache_block* convert_mem_block_to_cache_block(memory_block* m_block)
 }
 
 
-
+// The search_modified_block function checks if a given address in a multi-core processor's cache 
+// is in a modified state and is about to be overwritten. It searches through each core's cache 
+// and determines if the cache block corresponding to the address is marked as modified and if it 
+// is about to be overwritten by another core.
 int search_modified_block(processor *cpu, uint32_t address, bool *about_to_be_overwritten, uint32_t *address_of_overwritten, uint32_t *core_of_overwritten)
 {
     if (address_done) {
@@ -543,30 +571,30 @@ int search_modified_block(processor *cpu, uint32_t address, bool *about_to_be_ov
     }
 
     *about_to_be_overwritten = false;
-    uint32_t index = get_index(address);
-    if (cpu->core0->hold_the_bus && cpu->core0->cache->blocks[index].state == MODIFIED)
+    uint32_t cache_index = get_cache_index(address);
+    if (cpu->core0->hold_the_bus && cpu->core0->cache->blocks[cache_index].state == MODIFIED)
     {
         *about_to_be_overwritten = true;
         *core_of_overwritten = 0;
-        *address_of_overwritten = (cpu->core0->cache->blocks[index].tag << 8) | (index * CACHE_BLOCK_SIZE); //8 = INDEX_BITS + OFFSET_BITS
+        *address_of_overwritten = (cpu->core0->cache->blocks[cache_index].tag << 8) | (cache_index * CACHE_BLOCK_SIZE); //8 = INDEX_BITS + OFFSET_BITS
     }
-    if (cpu->core1->hold_the_bus && cpu->core1->cache->blocks[index].state == MODIFIED)
+    if (cpu->core1->hold_the_bus && cpu->core1->cache->blocks[cache_index].state == MODIFIED)
     {
         *about_to_be_overwritten = true;
         *core_of_overwritten = 1;
-        *address_of_overwritten = (cpu->core0->cache->blocks[index].tag << 8) | (index * CACHE_BLOCK_SIZE); //8 = INDEX_BITS + OFFSET_BITS
+        *address_of_overwritten = (cpu->core1->cache->blocks[cache_index].tag << 8) | (cache_index * CACHE_BLOCK_SIZE); //8 = INDEX_BITS + OFFSET_BITS
     }
-    if (cpu->core2->hold_the_bus && cpu->core2->cache->blocks[index].state == MODIFIED)
+    if (cpu->core2->hold_the_bus && cpu->core2->cache->blocks[cache_index].state == MODIFIED)
     {
         *about_to_be_overwritten = true;
         *core_of_overwritten = 2;
-        *address_of_overwritten = (cpu->core0->cache->blocks[index].tag << 8) | (index * CACHE_BLOCK_SIZE); //8 = INDEX_BITS + OFFSET_BITS
+        *address_of_overwritten = (cpu->core2->cache->blocks[cache_index].tag << 8) | (cache_index * CACHE_BLOCK_SIZE); //8 = INDEX_BITS + OFFSET_BITS
     }
-    if (cpu->core3->hold_the_bus && cpu->core3->cache->blocks[index].state == MODIFIED)
+    if (cpu->core3->hold_the_bus && cpu->core3->cache->blocks[cache_index].state == MODIFIED)
     {
         *about_to_be_overwritten = true;
         *core_of_overwritten = 3;
-        *address_of_overwritten = (cpu->core0->cache->blocks[index].tag << 8) | (index * CACHE_BLOCK_SIZE); //8 = INDEX_BITS + OFFSET_BITS
+        *address_of_overwritten = (cpu->core3->cache->blocks[cache_index].tag << 8) | (cache_index * CACHE_BLOCK_SIZE); //8 = INDEX_BITS + OFFSET_BITS
     }
 
     if (!cpu->core0->hold_the_bus && search_block(cpu->core0->cache, address) && get_cache_block(cpu->core0->cache, address)->state == MODIFIED)
@@ -581,6 +609,9 @@ int search_modified_block(processor *cpu, uint32_t address, bool *about_to_be_ov
     return 0;
 }
 
+// The update_cache_stats function updates the cache block states across multiple cores based on the latest 
+// block information. The function ensures cache consistency between cores and updates the cache states 
+// accordingly.
 void update_cache_stats(cache_block *core0_block, cache_block *core1_block, cache_block *core2_block, cache_block *core3_block, cache_block *mem_block)
 {
 

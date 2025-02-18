@@ -24,6 +24,11 @@ uint32_t get_index(uint32_t address)
     return (address / 4);
 }
 
+uint32_t get_cache_index(uint32_t address) 
+{
+    return get_index(address) % 64;
+}
+
 
 /* 
 * The function initializes the cache with:
@@ -45,12 +50,13 @@ void cache_initialization(Cache *cache)
 
 
 // The function looks for the block in the cache, if it is found it returns true and otherwise it returns false.
-bool search_block(Cache *cache, uint32_t address) 
-{
-    uint32_t index = get_index(address);
+bool search_block(Cache *cache, uint32_t address) {
     uint32_t tag = get_tag(address);
+    uint32_t cache_index = get_cache_index(address);
+    
+    
     // get the block from the cache
-    cache_block* cache_block_ptr = &cache->blocks[index];
+    cache_block* cache_block_ptr = &cache->blocks[cache_index];
     // hit
     //if (cache_block_ptr->state != INVALID && cache_block_ptr->tag == tag) {
     if (cache_block_ptr->state != INVALID && cache_block_ptr->tag == tag) {
@@ -63,19 +69,8 @@ bool search_block(Cache *cache, uint32_t address)
 // return pointer to copy of the cache block
 cache_block* get_cache_block(Cache *cache, uint32_t address)
 {
-    uint32_t index = get_index(address);
-    cache_block block = cache->blocks[index];
-    cache_block* c_block = (cache_block*)malloc(sizeof(cache_block));
-    if (!c_block) {
-        printf("Memory allocation failed!\n");
-        return NULL;
-    }
-    c_block->tag = block.tag;
-    c_block->state = block.state;
-    for(int i = 0; i < CACHE_BLOCK_SIZE; i++){
-        c_block->data[i] = block.data[i];
-    }
-    return &cache->blocks[index];
+    uint32_t cache_index = get_cache_index(address);
+    return &cache->blocks[cache_index];
 }
 
 
@@ -85,13 +80,13 @@ cache_block* get_cache_block(Cache *cache, uint32_t address)
  * Returns true on success and false in case of a failure.
  */
 bool insert_block(Cache *cache, uint32_t address, cache_block *new_block, int cycle) {
-    uint32_t index = (address / CACHE_BLOCK_SIZE) % NUM_BLOCKS; // extracting the index
+    uint32_t cache_index = get_cache_index(address);
     // Check if the index is within bounds
-    if (index >= NUM_BLOCKS) {
+    if (cache_index >= NUM_BLOCKS) {
         return false;; // Failure: index out of bounds
     }
     new_block->cycle = cycle;
-    cache->blocks[index] = *new_block;
+    cache->blocks[cache_index] = *new_block;
 
     return true;; // Success
 }

@@ -211,6 +211,7 @@ void copy_instruction(instruction* dest, instruction* src)
     dest->ALU_result = src->ALU_result;
     dest->bus_delay = src->bus_delay;
     dest->block_delay = src->block_delay;
+    dest->extra_delay = src->extra_delay;
 }
 
 // Creates a structure of 5 instructions and returns a pointer to it (used by the pipeline)
@@ -659,6 +660,10 @@ cache_block* pipeline_step(core* cpu, instructions* instructions, cache_block* d
         cpu->stats->num_of_decode_stalls = (cpu->stats->num_of_decode_stalls - (cpu->stats->num_of_mem_stalls + 4));
         cpu->done = true;
         fclose(cpu->coretrace_file);
+    }
+    if (*address != -1 && search_block(cpu->cache, *address))
+    {
+        c_block = get_cache_block(cpu->cache, *address);
     }
     return c_block;
 }
