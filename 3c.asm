@@ -21,9 +21,9 @@ loop:
 	sw $r7, $r5, $imm, 1
 	sw $r8, $r5, $imm, 2
 	sw $r9, $r5, $imm, 3
-	add $r2, $r2, $imm, 16	
 	add $r3, $r3, $imm, 16	
 	add $r4, $r4, $imm, 16	
+	add $r5, $r5, $imm, 16		
 	blt $imm, $r14, $r2, loop	
 	add $r14, $r14, $imm, 1	
 	add $r2, $zero, $imm, 15
