@@ -81,7 +81,6 @@ typedef struct {
 void set_file_names(filenames* filenames, char* argv[]);
 
 
-
 // Initializes file names to the defined default values
 void set_default_file_names(filenames* filenames);
 
@@ -90,10 +89,11 @@ void set_default_file_names(filenames* filenames);
  * Initializes the entire processor structure.
  * - Sets pc to 0.
  * - Initializes each core registers and prev_registers to 0.
- * - Initializes each core imem and prev_imem according to to the file instructions.
- * - Initializes each core cache and prev_cache using their respective initialization function.
+ * - Initializes each core imem according to the file instructions.
+ * - Initializes each core cache using their respective initialization function.
  */
 processor *init_processor(filenames *filenames);
+
 
 // Executes the processor run
 void run(processor* cpu, main_memory* memory);
@@ -107,17 +107,20 @@ bool finish(processor* cpu);
 void free_processor(processor* cpu);
 
 
-
+// convert cache_block into mem_block
 memory_block* convert_cache_block_to_mem_block(cache_block* c_block);
 
 
-
+// convert mem_block to cache_block
 cache_block* convert_mem_block_to_cache_block(memory_block* m_block);
 
 
-
+// After performing a step in each of the 4 pipelines in the cores, 
+// we check and update the state of the corresponding block in the corresponding cache (if required).
 int search_modified_block(processor *cpu, uint32_t address, bool *about_to_be_overwritten, uint32_t *address_of_overwritten, uint32_t *core_of_overwritten);
 
+
+// A function that performs the actual update to the block state
 void update_cache_stats(cache_block *core0_block, cache_block *core1_block, cache_block *core2_block, cache_block *core3_block, cache_block *mem_block);
 
 /*******************************************************/
@@ -128,3 +131,4 @@ void print_bus_status(processor* cpu);
 
 
 #endif // PROCESSOR_H
+

@@ -44,9 +44,11 @@ typedef struct {
 /**************** cashe functions **********************/
 /*******************************************************/
 
+// Extracts the index from an address
 uint32_t get_index(uint32_t address);
 
 
+// Extracts the tag from an address
 uint32_t get_tag(uint32_t address);
 
 
@@ -76,8 +78,6 @@ cache_block* get_cache_block(Cache *cache, uint32_t address);
  * Returns true on success and false in case of a failure.
  */
 bool insert_block(Cache *cache, uint32_t address, cache_block *new_block, int cycle);
-
-
 
 
 /*

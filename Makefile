@@ -15,6 +15,10 @@ ARGS = imem0.txt imem1.txt imem2.txt imem3.txt memin.txt memout.txt regout0.txt 
        core0trace.txt core1trace.txt core2trace.txt core3trace.txt bustrace.txt dsram0.txt dsram1.txt dsram2.txt dsram3.txt \
        tsram0.txt tsram1.txt tsram2.txt tsram3.txt stats0.txt stats1.txt stats2.txt stats3.txt
 
+#ARGS = 1.txt 1.txt 1.txt 1.txt memin.txt memout.txt regout0.txt regout1.txt regout2.txt regout3.txt \
+       core0trace.txt core1trace.txt core2trace.txt core3trace.txt bustrace.txt dsram0.txt dsram1.txt dsram2.txt dsram3.txt \
+       tsram0.txt tsram1.txt tsram2.txt tsram3.txt stats0.txt stats1.txt stats2.txt stats3.txt
+
 all: clean  # Ensure old trace files are deleted before recompiling
 	$(CC) $(CFLAGS) -o $(EXEC) $(SRCS)
 
@@ -23,3 +27,17 @@ clean:
 
 run: $(EXEC)
 	./$(EXEC) $(ARGS)
+
+FILES = memout.txt  \
+		regout0.txt core0trace.txt stats0.txt dsram0.txt tsram0.txt \
+        regout1.txt core1trace.txt stats1.txt dsram1.txt tsram1.txt \
+        regout2.txt core2trace.txt stats2.txt dsram2.txt tsram2.txt \
+        dsram3.txt tsram3.txt regout3.txt core3trace.txt stats3.txt \
+        bustrace.txt
+
+compare:
+	@for file in $(FILES); do \
+		echo -e "\033[36mComparing $$file with examples/$$file\033[0m"; \
+		diff -y --suppress-common-lines $$file examples/$$file || echo "Differences found in $$file"; \
+		echo -e "\033[33m---------------------------------------\033[0m"; \
+	done

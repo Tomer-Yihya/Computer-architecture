@@ -97,26 +97,6 @@ memory_block* get_block(main_memory* mem, uint32_t address)
     return mem_block;
 }
 
-// Writes a word (int) to a specific address in memory (at the appropriate location in the block)
-void write_word_to_block(main_memory* mem, uint32_t address, int word) 
-{
-    if (!mem) {
-        printf("Error: Memory pointer is NULL in write_word_to_block.\n");
-        return;
-    }
-    // Extract offset, index, and tag from the address
-    if (address >= MAIN_MEMORY_SIZE * BLOCK_SIZE) {
-        printf("Error: Address out of bounds in write_word_to_block.\n");
-        return;
-    }
-    uint32_t offset = address % BLOCK_SIZE;                  // Offset within the block
-    uint32_t index = (address / BLOCK_SIZE) % NUM_OF_BLOCKS; // Index of the block
-    uint32_t tag = address / (BLOCK_SIZE * NUM_OF_BLOCKS);   // Tag of the block
-    // Update the block in memory
-    mem->blocks[index].data[offset] = word; // Write the word at the correct offset
-    mem->blocks[index].tag = tag;           // Update the tag for the block
-}
-
 
 void insert_block_to_memory(main_memory* mem, uint32_t address, memory_block new_block) 
 {

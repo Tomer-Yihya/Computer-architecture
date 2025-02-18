@@ -8,8 +8,8 @@
 #include "processor.h"
 #include "bus.h"
 
-#define DEBUG true 
-//#define DEBUG false
+//define DEBUG true 
+#define DEBUG false
 
 
 /*******************************************************/
@@ -94,7 +94,6 @@ void set_default_file_names(filenames* filenames)
 }
 
 
-
 /*
  * Initializes the entire processor structure.
  * - Sets pc to 0.
@@ -103,7 +102,6 @@ void set_default_file_names(filenames* filenames)
  * - Initializes each core cache and prev_cache using their respective initialization function.
  */
 processor* init_processor(filenames* filenames)
-//processor* init_processor(filenames* filenames)
 {
     processor* cpu = malloc(sizeof(processor));
     if (!cpu) {
@@ -201,7 +199,6 @@ void run(processor* cpu, main_memory* memory)
             // if at least one of the cores needs the bus
             if(cpu->core0->need_the_bus || cpu->core1->need_the_bus || cpu->core2->need_the_bus || cpu->core3->need_the_bus){
                 // choose who will work with the bus and update the queue
-                // core* temp = cpu->round_robin_queue[0];
                 temp_core = cpu->round_robin_queue[0];
                 if(temp_core->need_the_bus) {
                     temp_core->hold_the_bus = true;
@@ -297,7 +294,6 @@ void run(processor* cpu, main_memory* memory)
         mem_block = get_block(memory, address);
         data_from_memory = convert_mem_block_to_cache_block(mem_block);
 
-        // bool extra_delay = function!!!!!!!!!!!!!
         // make one step in each core
         cpu->cycle++;
         cache_block *b1 = pipeline_step(cpu->core0, cpu->core0_instructions, data_from_memory, &address, &extra_delay);
@@ -383,7 +379,6 @@ void run(processor* cpu, main_memory* memory)
             set_bus(3, cpu->core3_instructions->memory->opcode == 16 ? BusRd : BusRdX, address, 0);
             write_line_to_bustrace_file(cpu, cpu->cycle + 1);
         }
-
         else if (cpu->core0->hold_the_bus && cpu->core0_instructions->memory->bus_delay == 0 && cpu->core0_instructions->memory->block_delay == 0)
         {
             for (int i = 0; i < 4; i++)
@@ -495,7 +490,7 @@ void free_processor(processor* cpu)
 }
 
 
-
+// convert cache_block into mem_block
 memory_block* convert_cache_block_to_mem_block(cache_block* c_block) 
 {
     // without cache_block we have nothing to convert
@@ -517,7 +512,7 @@ memory_block* convert_cache_block_to_mem_block(cache_block* c_block)
 }
 
 
-
+// convert mem_block to cache_block
 cache_block* convert_mem_block_to_cache_block(memory_block* m_block) 
 {
     // without cache_block we have nothing to convert
@@ -539,10 +534,11 @@ cache_block* convert_mem_block_to_cache_block(memory_block* m_block)
     return c_block;
 }
 
+
+
 int search_modified_block(processor *cpu, uint32_t address, bool *about_to_be_overwritten, uint32_t *address_of_overwritten, uint32_t *core_of_overwritten)
 {
-    if (address_done)
-    {
+    if (address_done) {
         return 0;
     }
 
@@ -664,3 +660,4 @@ void print_bus_status(processor* cpu)
         if(cpu->core3->need_the_bus && !cpu->core3->hold_the_bus) { printf("core3 is waiting for the bus, core3 mem_instructions: %s\n", core3_mem_inst); }
     }
 }
+

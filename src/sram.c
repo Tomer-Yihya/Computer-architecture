@@ -7,9 +7,6 @@
 #include <stdio.h>
 
 
-
-
-
 /*******************************************************/
 /**************** cashe functions **********************/
 /*******************************************************/
@@ -48,11 +45,10 @@ void cache_initialization(Cache *cache)
 
 
 // The function looks for the block in the cache, if it is found it returns true and otherwise it returns false.
-bool search_block(Cache *cache, uint32_t address) {
+bool search_block(Cache *cache, uint32_t address) 
+{
     uint32_t index = get_index(address);
     uint32_t tag = get_tag(address);
-    
-    
     // get the block from the cache
     cache_block* cache_block_ptr = &cache->blocks[index];
     // hit
@@ -105,13 +101,11 @@ bool insert_block(Cache *cache, uint32_t address, cache_block *new_block, int cy
  * The function updates the MESI state of a block in the cache if it exists.
  * If the block is found, updates its state and true, if not found, returns false.
  */
-bool update_state(Cache *cache, uint32_t address, MESI_state new_state) {
-    
+bool update_state(Cache *cache, uint32_t address, MESI_state new_state) 
+{
     uint32_t index = (address / CACHE_BLOCK_SIZE) % NUM_BLOCKS; // Extract the index
     uint32_t tag = address / (CACHE_BLOCK_SIZE * NUM_BLOCKS);   // Extract the tag
-
     cache_block *block = &cache->blocks[index];
-
     // Check if the block is valid and the tag matches
     if (block->state != INVALID && block->tag == tag) {
         block->state = new_state; // Update the state
@@ -122,7 +116,8 @@ bool update_state(Cache *cache, uint32_t address, MESI_state new_state) {
 
 
 
-void free_cache(Cache* cache) {
+void free_cache(Cache* cache)
+{
     if (!cache) return;
     free(cache);
 }
@@ -132,9 +127,7 @@ void free_cache(Cache* cache) {
 /*************** Debugging functions *******************/
 /*******************************************************/
 
-/*
- * Prints the entire cache, including all blocks regardless of their MESI state.
- */
+// Prints the entire cache, including all blocks regardless of their MESI state.
 void print_all_cache(Cache *cache) {
     for (int i = 0; i < NUM_BLOCKS; i++) {
         cache_block *block = &cache->blocks[i];
@@ -164,9 +157,8 @@ void print_all_cache(Cache *cache) {
     }
 }
 
-/*
- * Prints only the valid blocks of the cache (blocks with MESI state not INVALID).
- */
+
+// Prints only the valid blocks of the cache (blocks with MESI state not INVALID).
 void print_cache(Cache *cache) {
     for (int i = 0; i < NUM_BLOCKS; i++) {
         cache_block *block = &cache->blocks[i];

@@ -50,15 +50,11 @@ If the array is not initialized, an empty block is returned.
 */
 memory_block* get_block(main_memory* mem, uint32_t address);
 
-// Writes a word (int) to a specific address in memory (at the appropriate location in the block)
-void write_word_to_block(main_memory* mem, uint32_t address, int word);
-
-
+// Writes over the old block in memory and essentially overwrites it
 void insert_block_to_memory(main_memory* mem, uint32_t address, memory_block new_block);
 
-
+// Frees the memory structure
 void free_main_memory(main_memory* memory);
-
 
 /*******************************************************/
 /*************** Create output files *******************/
