@@ -12,10 +12,10 @@ loop:
 	lw $r11, $r4, $imm, 1		
 	lw $r12, $r4, $imm, 2		
 	lw $r13, $r4, $imm, 3		
-	add $r6, $r6, $r10
-	add $r7, $r7, $r11
-	add $r8, $r8, $r12
-	add $r9, $r9, $r13
+	add $r6, $r6, $r10, 0
+	add $r7, $r7, $r11, 0
+	add $r8, $r8, $r12, 0
+	add $r9, $r9, $r13, 0
 	sw $r6, $r5, $imm, 0
 	sw $r7, $r5, $imm, 1
 	sw $r8, $r5, $imm, 2
