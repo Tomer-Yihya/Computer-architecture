@@ -3,12 +3,30 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include "sram.h"
+#include <stdint.h>
+#include <stdio.h>
+
+
 
 
 
 /*******************************************************/
 /**************** cashe functions **********************/
 /*******************************************************/
+
+uint32_t get_tag(uint32_t address)
+{
+    address &= 0x000FFFFF;
+    return address >> 8;
+}
+
+
+uint32_t get_index(uint32_t address) 
+{
+    address = address & 0x000FFFFF;
+    return (address / 4);
+}
+
 
 /* 
 * The function initializes the cache with:
@@ -31,9 +49,9 @@ void cache_initialization(Cache *cache)
 
 // The function looks for the block in the cache, if it is found it returns true and otherwise it returns false.
 bool search_block(Cache *cache, uint32_t address) {
-    uint32_t index = (address / CACHE_BLOCK_SIZE) % NUM_BLOCKS; // extracting the index
-    uint32_t tag = address / CACHE_BLOCK_SIZE & 0xfff;   // extracting the tag
-    // uint32_t offset = address % CACHE_BLOCK_SIZE;            // extracting the offset
+    uint32_t index = get_index(address);
+    uint32_t tag = get_tag(address);
+    
     
     // get the block from the cache
     cache_block* cache_block_ptr = &cache->blocks[index];
@@ -49,7 +67,7 @@ bool search_block(Cache *cache, uint32_t address) {
 // return pointer to copy of the cache block
 cache_block* get_cache_block(Cache *cache, uint32_t address)
 {
-    uint32_t index = (address / CACHE_BLOCK_SIZE) % NUM_BLOCKS;
+    uint32_t index = get_index(address);
     cache_block block = cache->blocks[index];
     cache_block* c_block = (cache_block*)malloc(sizeof(cache_block));
     if (!c_block) {
@@ -72,7 +90,6 @@ cache_block* get_cache_block(Cache *cache, uint32_t address)
  */
 bool insert_block(Cache *cache, uint32_t address, cache_block *new_block, int cycle) {
     uint32_t index = (address / CACHE_BLOCK_SIZE) % NUM_BLOCKS; // extracting the index
-    
     // Check if the index is within bounds
     if (index >= NUM_BLOCKS) {
         return false;; // Failure: index out of bounds

@@ -8,8 +8,8 @@
 #include "processor.h"
 #include "bus.h"
 
-//#define DEBUG true 
-#define DEBUG false
+#define DEBUG true 
+//#define DEBUG false
 
 
 /*******************************************************/
@@ -153,7 +153,6 @@ void run(processor* cpu, main_memory* memory)
     cache_block *data_to_memory = NULL;
     bool extra_delay = false;
     uint32_t address = 0;
-    uint32_t tag = 0;
     core* temp_core = (core*)malloc(sizeof(core));
     if (!temp_core) {
         printf("Memory allocation failed!\n");
@@ -240,7 +239,6 @@ void run(processor* cpu, main_memory* memory)
             }
         }
         // check uniqe modified block in caches
-        tag = address / BLOCK_SIZE;
         bool about_to_be_overwritten = false;
         uint32_t address_of_overwritten = 0;
         uint32_t core_of_overwritten = 0;
@@ -268,8 +266,7 @@ void run(processor* cpu, main_memory* memory)
             }
             data_to_memory->state = EXCLUSIVE;
             mem_block = convert_cache_block_to_mem_block(data_to_memory);
-            uint32_t tag_of_overwritten = address_of_overwritten / BLOCK_SIZE;
-            insert_block_to_memory(memory, tag_of_overwritten, *mem_block);
+            insert_block_to_memory(memory, address_of_overwritten, *mem_block);
         }
         if (!extra_delay && core_num > 0)
         {
@@ -295,9 +292,9 @@ void run(processor* cpu, main_memory* memory)
             }
             data_to_memory->state = EXCLUSIVE;
             mem_block = convert_cache_block_to_mem_block(data_to_memory);
-            insert_block_to_memory(memory, tag, *mem_block);
+            insert_block_to_memory(memory, address, *mem_block);
         }
-        mem_block = get_block(memory, tag);
+        mem_block = get_block(memory, address);
         data_from_memory = convert_mem_block_to_cache_block(mem_block);
 
         // bool extra_delay = function!!!!!!!!!!!!!
@@ -347,22 +344,22 @@ void run(processor* cpu, main_memory* memory)
 
         if (cpu->core0->hold_the_bus && extra_delay && cpu->core0_instructions->memory->extra_delay != 0)
         {
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 4 - cpu->core0_instructions->memory->extra_delay, get_block(memory, tag)->data[4 - cpu->core0_instructions->memory->extra_delay]);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 4 - cpu->core0_instructions->memory->extra_delay, get_block(memory, address)->data[4 - cpu->core0_instructions->memory->extra_delay]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 1);
         }
         else if (cpu->core1->hold_the_bus && extra_delay && cpu->core1_instructions->memory->extra_delay != 0)
         {
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 4 - cpu->core1_instructions->memory->extra_delay, get_block(memory, tag)->data[4 - cpu->core1_instructions->memory->extra_delay]);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 4 - cpu->core1_instructions->memory->extra_delay, get_block(memory, address)->data[4 - cpu->core1_instructions->memory->extra_delay]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 1);
         }
         else if (cpu->core2->hold_the_bus && extra_delay && cpu->core2_instructions->memory->extra_delay != 0)
         {
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 4 - cpu->core2_instructions->memory->extra_delay, get_block(memory, tag)->data[4 - cpu->core2_instructions->memory->extra_delay]);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 4 - cpu->core2_instructions->memory->extra_delay, get_block(memory, address)->data[4 - cpu->core2_instructions->memory->extra_delay]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 1);
         }
         else if (cpu->core3->hold_the_bus && extra_delay && cpu->core3_instructions->memory->extra_delay != 0)
         {
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 4 - cpu->core3_instructions->memory->extra_delay, get_block(memory, tag)->data[4 - cpu->core3_instructions->memory->extra_delay]);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 4 - cpu->core3_instructions->memory->extra_delay, get_block(memory, address)->data[4 - cpu->core3_instructions->memory->extra_delay]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 1);
         }
 
@@ -391,7 +388,7 @@ void run(processor* cpu, main_memory* memory)
         {
             for (int i = 0; i < 4; i++)
             {
-                set_bus(data_source, Flush, (address & ~0x03) + i, get_block(memory, tag)->data[i]);
+                set_bus(data_source, Flush, (address & ~0x03) + i, get_block(memory, address)->data[i]);
                 if (cpu->core0_instructions->memory->opcode==16 && data_source != 4)
                 {
                     set_shared();
@@ -405,7 +402,7 @@ void run(processor* cpu, main_memory* memory)
         {
             for (int i = 0; i < 4; i++)
             {
-                set_bus(data_source, Flush, (address & ~0x03) + i, get_block(memory, tag)->data[i]);
+                set_bus(data_source, Flush, (address & ~0x03) + i, get_block(memory, address)->data[i]);
                 if (cpu->core1_instructions->memory->opcode==16 && data_source != 4)
                 {
                     set_shared();
@@ -419,7 +416,7 @@ void run(processor* cpu, main_memory* memory)
         {
             for (int i = 0; i < 4; i++)
             {
-                set_bus(data_source, Flush, (address & ~0x03) + i, get_block(memory, tag)->data[i]);
+                set_bus(data_source, Flush, (address & ~0x03) + i, get_block(memory, address)->data[i]);
                 if (cpu->core2_instructions->memory->opcode==16 && data_source != 4)
                 {
                     set_shared();
@@ -433,7 +430,7 @@ void run(processor* cpu, main_memory* memory)
         {
             for (int i = 0; i < 4; i++)
             {
-                set_bus(data_source, Flush, (address & ~0x03) + i, get_block(memory, tag)->data[i]);
+                set_bus(data_source, Flush, (address & ~0x03) + i, get_block(memory, address)->data[i]);
                 if (cpu->core3_instructions->memory->opcode==16 && data_source != 4)
                 {
                     set_shared();
@@ -445,8 +442,7 @@ void run(processor* cpu, main_memory* memory)
         }
 
         if (DEBUG) {
-            print_bus_status(cpu);
-            // print_core_trace_hex(cpu->core2, cpu->core2_instructions);
+            print_core_trace_hex(cpu->core2, cpu->core2_instructions);
         }
     }
     create_memout_file(memory, cpu->filenames->memout_str);
@@ -551,30 +547,30 @@ int search_modified_block(processor *cpu, uint32_t address, bool *about_to_be_ov
     }
 
     *about_to_be_overwritten = false;
-    uint32_t index = (address / CACHE_BLOCK_SIZE) % NUM_BLOCKS;
+    uint32_t index = get_index(address);
     if (cpu->core0->hold_the_bus && cpu->core0->cache->blocks[index].state == MODIFIED)
     {
         *about_to_be_overwritten = true;
         *core_of_overwritten = 0;
-        *address_of_overwritten =  (cpu->core0->cache->blocks[index].tag << 2) | (index * CACHE_BLOCK_SIZE);
+        *address_of_overwritten = (cpu->core0->cache->blocks[index].tag << 8) | (index * CACHE_BLOCK_SIZE); //8 = INDEX_BITS + OFFSET_BITS
     }
     if (cpu->core1->hold_the_bus && cpu->core1->cache->blocks[index].state == MODIFIED)
     {
         *about_to_be_overwritten = true;
         *core_of_overwritten = 1;
-        *address_of_overwritten = (cpu->core1->cache->blocks[index].tag << 2) | (index * CACHE_BLOCK_SIZE);
+        *address_of_overwritten = (cpu->core0->cache->blocks[index].tag << 8) | (index * CACHE_BLOCK_SIZE); //8 = INDEX_BITS + OFFSET_BITS
     }
     if (cpu->core2->hold_the_bus && cpu->core2->cache->blocks[index].state == MODIFIED)
     {
         *about_to_be_overwritten = true;
         *core_of_overwritten = 2;
-        *address_of_overwritten = (cpu->core2->cache->blocks[index].tag << 2) | (index * CACHE_BLOCK_SIZE);
+        *address_of_overwritten = (cpu->core0->cache->blocks[index].tag << 8) | (index * CACHE_BLOCK_SIZE); //8 = INDEX_BITS + OFFSET_BITS
     }
     if (cpu->core3->hold_the_bus && cpu->core3->cache->blocks[index].state == MODIFIED)
     {
         *about_to_be_overwritten = true;
         *core_of_overwritten = 3;
-        *address_of_overwritten = (cpu->core3->cache->blocks[index].tag << 2) | (index * CACHE_BLOCK_SIZE);
+        *address_of_overwritten = (cpu->core0->cache->blocks[index].tag << 8) | (index * CACHE_BLOCK_SIZE); //8 = INDEX_BITS + OFFSET_BITS
     }
 
     if (!cpu->core0->hold_the_bus && search_block(cpu->core0->cache, address) && get_cache_block(cpu->core0->cache, address)->state == MODIFIED)

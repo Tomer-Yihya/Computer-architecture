@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include "sram.h"
 #include "memory.h"
 
 
@@ -29,7 +30,7 @@ main_memory* init_main_memory(char* filename)
     }
     // Initialize all blocks
     for (int i = 0; i < NUM_OF_BLOCKS; i++) {
-        mem->blocks[i].tag = 0;  // Ensure tag starts at 0
+        mem->blocks[i].tag = (uint32_t)i/64;  // Ensure tag starts at 0
         for (int j = 0; j < BLOCK_SIZE; j++) {
             mem->blocks[i].data[j] = 0;
         }
@@ -56,7 +57,6 @@ main_memory* init_main_memory(char* filename)
         block_offset = line_number % BLOCK_SIZE;
         if (block_index < NUM_OF_BLOCKS) {
             mem->blocks[block_index].data[block_offset] = value;
-            mem->blocks[block_index].tag = (line_number / BLOCK_SIZE) & 0xFFF;
         }
         line_number++;
     }
@@ -65,7 +65,6 @@ main_memory* init_main_memory(char* filename)
         block_offset = line_number % BLOCK_SIZE;
         if (block_index < NUM_OF_BLOCKS) {
             mem->blocks[block_index].data[block_offset] = 0;
-            mem->blocks[block_index].tag = (line_number / BLOCK_SIZE) & 0xFFF;
         }
         line_number++;
     }
@@ -73,22 +72,15 @@ main_memory* init_main_memory(char* filename)
     return mem;
 }
 
-
-
-
 /*
 Returns a copy of the block from the memory array.
 Adjusts to memory boundaries so that there is no overflow.
 If the array is not initialized, an empty block is returned.
 */
-memory_block* get_block(main_memory* mem, int tag) 
+memory_block* get_block(main_memory* mem, uint32_t address) 
 {
     if (!mem) {
         printf("Error: Memory is not initialized.\n");
-        return NULL;
-    }
-    if (tag < 0) {
-        printf("Error: Invalid tag value in get_block.\n");
         return NULL;
     }
     memory_block* mem_block = malloc(sizeof(memory_block));
@@ -96,11 +88,11 @@ memory_block* get_block(main_memory* mem, int tag)
         perror("Failed to allocate memory for memory block");
         exit(EXIT_FAILURE);
     }
-    int adjusted_index = tag % NUM_OF_BLOCKS;
+    int index = get_index(address);
     // Return a copy of the appropriate block
-    mem_block->tag = mem->blocks[adjusted_index].tag;
+    mem_block->tag = mem->blocks[index].tag;
     for(int i = 0; i < BLOCK_SIZE; i++){
-        mem_block->data[i] = mem->blocks[adjusted_index].data[i];
+        mem_block->data[i] = mem->blocks[index].data[i];
     }
     return mem_block;
 }
@@ -126,18 +118,15 @@ void write_word_to_block(main_memory* mem, uint32_t address, int word)
 }
 
 
-void insert_block_to_memory(main_memory* mem, int tag, memory_block new_block) 
+void insert_block_to_memory(main_memory* mem, uint32_t address, memory_block new_block) 
 {
     if (!mem) {
         printf("Error: Memory pointer is NULL in write_block_to_memory.\n");
         return;
     }
-    if (tag < 0) {
-        printf("Error: Invalid tag value in write_block_to_memory.\n");
-        return;
-    }
     // Compute the index in memory based on the tag
-    int index = tag % NUM_OF_BLOCKS;
+    uint32_t index = get_index(address);
+    uint32_t tag = get_tag(address);
     // Replace the old block with the new block
     mem->blocks[index] = new_block;
     // Update the tag of the new block
