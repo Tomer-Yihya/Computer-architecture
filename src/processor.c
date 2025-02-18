@@ -341,67 +341,67 @@ void run(processor* cpu, main_memory* memory)
         if (cpu->core0->hold_the_bus && cpu->core0_instructions->memory->extra_delay == EXTRA_DELAY - 1)
         {
             set_bus(first_flush, Flush, (flush_address & ~0x03) + 0, get_block(memory, flush_address)->data[0]);
-            write_line_to_bustrace_file(cpu, cpu->cycle - 1);
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 1, get_block(memory, flush_address)->data[1]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 0);
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 2, get_block(memory, flush_address)->data[2]);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 1, get_block(memory, flush_address)->data[1]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 1);
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 3, get_block(memory, flush_address)->data[3]);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 2, get_block(memory, flush_address)->data[2]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 2);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 3, get_block(memory, flush_address)->data[3]);
+            write_line_to_bustrace_file(cpu, cpu->cycle + 3);
         }
         else if (cpu->core1->hold_the_bus && cpu->core1_instructions->memory->extra_delay == EXTRA_DELAY - 1)
         {
             set_bus(first_flush, Flush, (flush_address & ~0x03) + 0, get_block(memory, flush_address)->data[0]);
-            write_line_to_bustrace_file(cpu, cpu->cycle - 1);
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 1, get_block(memory, flush_address)->data[1]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 0);
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 2, get_block(memory, flush_address)->data[2]);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 1, get_block(memory, flush_address)->data[1]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 1);
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 3, get_block(memory, flush_address)->data[3]);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 2, get_block(memory, flush_address)->data[2]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 2);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 3, get_block(memory, flush_address)->data[3]);
+            write_line_to_bustrace_file(cpu, cpu->cycle + 3);
         }
         else if (cpu->core2->hold_the_bus && cpu->core2_instructions->memory->extra_delay == EXTRA_DELAY - 1)
         {
             set_bus(first_flush, Flush, (flush_address & ~0x03) + 0, get_block(memory, flush_address)->data[0]);
-            write_line_to_bustrace_file(cpu, cpu->cycle - 1);
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 1, get_block(memory, flush_address)->data[1]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 0);
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 2, get_block(memory, flush_address)->data[2]);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 1, get_block(memory, flush_address)->data[1]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 1);
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 3, get_block(memory, flush_address)->data[3]);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 2, get_block(memory, flush_address)->data[2]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 2);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 3, get_block(memory, flush_address)->data[3]);
+            write_line_to_bustrace_file(cpu, cpu->cycle + 3);
         }
         else if (cpu->core3->hold_the_bus && cpu->core3_instructions->memory->extra_delay == EXTRA_DELAY - 1)
         {
             set_bus(first_flush, Flush, (flush_address & ~0x03) + 0, get_block(memory, flush_address)->data[0]);
-            write_line_to_bustrace_file(cpu, cpu->cycle - 1);
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 1, get_block(memory, flush_address)->data[1]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 0);
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 2, get_block(memory, flush_address)->data[2]);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 1, get_block(memory, flush_address)->data[1]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 1);
-            set_bus(first_flush, Flush, (flush_address & ~0x03) + 3, get_block(memory, flush_address)->data[3]);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 2, get_block(memory, flush_address)->data[2]);
             write_line_to_bustrace_file(cpu, cpu->cycle + 2);
+            set_bus(first_flush, Flush, (flush_address & ~0x03) + 3, get_block(memory, flush_address)->data[3]);
+            write_line_to_bustrace_file(cpu, cpu->cycle + 3);
         }
 
         else if (cpu->core0->hold_the_bus && cpu->core0_instructions->memory->bus_delay == BUS_DELAY - 2)
         {
             set_bus(0, cpu->core0_instructions->memory->opcode == 16 ? BusRd : BusRdX, address, 0);
-            write_line_to_bustrace_file(cpu, cpu->cycle - 1);
+            write_line_to_bustrace_file(cpu, cpu->cycle);
         }
         else if (cpu->core1->hold_the_bus && cpu->core1_instructions->memory->bus_delay == BUS_DELAY - 2)
         {
             set_bus(1, cpu->core1_instructions->memory->opcode == 16 ? BusRd : BusRdX, address, 0);
-            write_line_to_bustrace_file(cpu, cpu->cycle - 1);
+            write_line_to_bustrace_file(cpu, cpu->cycle);
         }
         else if (cpu->core2->hold_the_bus && cpu->core2_instructions->memory->bus_delay == BUS_DELAY - 2)
         {
             set_bus(2, cpu->core2_instructions->memory->opcode == 16 ? BusRd : BusRdX, address, 0);
-            write_line_to_bustrace_file(cpu, cpu->cycle - 1);
+            write_line_to_bustrace_file(cpu, cpu->cycle);
         }
         else if (cpu->core3->hold_the_bus && cpu->core3_instructions->memory->bus_delay == BUS_DELAY - 2)
         {
             set_bus(3, cpu->core3_instructions->memory->opcode == 16 ? BusRd : BusRdX, address, 0);
-            write_line_to_bustrace_file(cpu, cpu->cycle - 1);
+            write_line_to_bustrace_file(cpu, cpu->cycle);
         }
 
         else if (cpu->core0->hold_the_bus && cpu->core0_instructions->memory->block_delay == 0)
