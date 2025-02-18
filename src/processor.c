@@ -563,6 +563,10 @@ cache_block* convert_mem_block_to_cache_block(memory_block* m_block)
     return c_block;
 }
 
+// The search_modified_block function checks if a given address in a multi-core processor's cache 
+// is in a modified state and is about to be overwritten. It searches through each core's cache 
+// and determines if the cache block corresponding to the address is marked as modified and if it 
+// is about to be overwritten by another core.
 int search_modified_block(processor *cpu, uint32_t address, bool *about_to_be_overwritten, uint32_t *address_of_overwritten, uint32_t *core_of_overwritten)
 {
     if (address_done)
@@ -609,6 +613,9 @@ int search_modified_block(processor *cpu, uint32_t address, bool *about_to_be_ov
     return 0;
 }
 
+// The update_cache_stats function updates the cache block states across multiple cores based on the latest 
+// block information. The function ensures cache consistency between cores and updates the cache states 
+// accordingly.
 void update_cache_stats(cache_block *core0_block, cache_block *core1_block, cache_block *core2_block, cache_block *core3_block, cache_block *mem_block)
 {
 
